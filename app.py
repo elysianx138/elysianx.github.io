@@ -1,4 +1,8 @@
 import sqlite3
+
+import datetime
+from typing import Final
+
 from flask_login import LoginManager, UserMixin, login_user, login_required, current_user, logout_user
 from flask import render_template, request, redirect, flash, url_for
 
@@ -82,7 +86,7 @@ def profile(username):
 @login_required
 def logout():
     logout_user()
-    return redirect('/login')
+    return redirect('/')
 
 @app.route('/edit_profile', methods=['POST'])
 @login_required
@@ -98,6 +102,46 @@ def edit_profile():
         conn.close()
     return redirect(url_for("profile", username=current_user.username))
 
+@app.route("/add", methods=['GET', 'POST'])
+@login_required
+def add():
+    if request.method == 'POST':
+        try:
+            title = request.form['title']
+            body = request.form['body']
+            conn = get_db_connection()
+
+            conn.execute("INSERT INTO articles (title,body, author,date) VALUES (?, ?,?, ?)",(title,body, current_user.username,datetime.datetime.now().strftime("%Y-%m-%d")))
+            conn.commit()
+            conn.close()
+
+            flash("文章发布成功", "success")
+            return redirect(url_for("add"))
+            
+        except Exception as e:
+            flash(f"发布失败: {e}", "danger")
+            return redirect(url_for("add"))
+    return render_template('add.html')
+
+@app.route("/articles_list", methods=['GET'])
+def article_list():
+    conn = get_db_connection()
+    art = conn.execute("SELECT * FROM articles").fetchall()
+    conn.close()
+    return render_template('articles_list.html', articles=art)
+
+@app.route("/article/<int:article_id>", methods=['GET'])
+@login_required
+def article_detail(article_id):
+    conn = get_db_connection()
+    det = conn.execute("SELECT * FROM articles WHERE id = ?", (article_id,)).fetchone()
+
+    if det is None:
+        conn.close()
+        return "题目不存在",404
+
+    conn.close()
+    return render_template('article_detail.html', detail=det)
 
 
 @app.route('/')

@@ -8,13 +8,12 @@ print(f"正在加载数据库[{db_name}]!")
 
 # 文章题目数据库
 # id,文章标题,内容,作者,日期
-c.execute('''CREATE TABLE IF NOT EXISTS questions 
+c.execute('''CREATE TABLE IF NOT EXISTS articles 
             (id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
             body TEXT NOT NULL,
             author TEXT NOT NULL,
-            date TEXT NOT NULL,
-            image TEXT)''')
+            date TEXT NOT NULL)''')
 
 # 创建用户表
 c.execute('''CREATE TABLE IF NOT EXISTS users
