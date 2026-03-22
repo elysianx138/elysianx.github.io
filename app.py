@@ -1,14 +1,35 @@
 import os
 import sqlite3
 import datetime
+import secrets
 from flask_login import LoginManager, UserMixin, login_user, login_required, current_user, logout_user
-from flask import render_template, request, redirect, flash, url_for, send_from_directory
+from flask import render_template, request, redirect, flash, url_for, send_from_directory, abort, session
 import flask
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = flask.Flask(__name__)
-app.secret_key = "MyBlog"
+app.secret_key = os.getenv('SECRET_KEY','RANDOM_KEY')
+
+# === CSRF 保护 ===
+@app.before_request
+def csrf_protect():
+    if request.method == "POST":
+        token = session.get('csrf_token')
+        if not token or token != request.form.get('csrf_token'):
+            abort(403)
+
+@app.context_processor
+def csrf_token():
+    def generate():
+        if 'csrf_token' not in session:
+            session['csrf_token'] = secrets.token_hex(16)
+        return session['csrf_token']
+    return dict(csrf_token=generate)
+# === CSRF 保护结束 ===
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -29,38 +50,36 @@ def uploaded_file(filename):
 @app.route('/uploads', methods=['POST','GET'])
 @login_required
 def uploads():
-    if request.method == 'GET':
-        return render_template('uploads.html')
-    
-    if 'file' not in request.files:
-        flash('没有文件','danger')
-        return redirect(url_for('files_list'))
-
-    file = request.files['file']
-
-    if file.filename == '':
-        flash("没有文件","danger")
-        return redirect(url_for('index'))
-
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        file.save(os.path.join('uploads', filename))
-        conn = get_db_connection()
-        conn.execute("INSERT INTO files (filepath, filename, uploader,date) VALUES (?, ?, ?, ?)",(f"uploads/{filename}",filename,current_user.username,datetime.datetime.now()))
-        conn.commit()
-        conn.close()
-        flash("文件上传成功","success")
-        return redirect(url_for('files_list'))
-    flash("文件类型不支持","danger")
-    return redirect(url_for('index'))
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            flash('没有文件', 'danger')
+            return redirect(url_for('files_list'))
+        file = request.files['file']
+        if file.filename == '':
+            flash('没有文件', 'danger')
+            return redirect(url_for('index'))
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file.save(os.path.join('uploads', filename))
+            conn = get_db_connection()
+            conn.execute(
+                "INSERT INTO files (filepath, filename, uploader, date) VALUES (?, ?, ?, ?)",
+                (f"uploads/{filename}", filename, current_user.username, datetime.datetime.now())
+            )
+            conn.commit()
+            conn.close()
+            flash('文件上传成功', 'success')
+            return redirect(url_for('files_list'))
+        flash('文件类型不支持', 'danger')
+        return redirect(url_for('uploads'))
+    return render_template('uploads.html')
 
 @app.route('/files_list')
 def files_list():
     conn = get_db_connection()
     f_list = conn.execute("SELECT * FROM files").fetchall()
     conn.close()
-    return render_template("files_list.html",f_list=f_list)
-
+    return render_template("files_list.html", f_list=f_list)
 
 def get_db_connection():
     conn = sqlite3.connect("questions.db")
@@ -89,28 +108,27 @@ def login():
         conn.close()
         
         if user and check_password_hash(user['password'], password):
-            login_user(User(user['id'], user['username'], user['bio'],user['role'],user['email']))
+            login_user(User(user['id'], user['username'], user['bio'], user['role'], user['email']))
             return redirect('/')
         
-        return '登录失败'
+        flash('用户名或密码错误', 'danger')
     
     return render_template('login.html')
 
-
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    ADMIN_CODE = 'MyBlog2026'
+    ADMIN_CODE = os.getenv('ADMIN_CODE',"RANDOM_KEY")
     if request.method == 'POST':
         conn = get_db_connection()
         try:
             if request.form.get('admin_code') == ADMIN_CODE:
                 role = 'admin'
-            else :
+            else:
                 role = 'visitor'
 
             conn.execute(
                 "INSERT INTO users (username, password, email, role) VALUES (?, ?, ?, ?)",
-                (request.form['username'], 
+                (request.form['username'],
                  generate_password_hash(request.form['password']),
                  request.form.get('email', ''),
                  role)
@@ -118,11 +136,11 @@ def register():
 
             conn.commit()
             conn.close()
+            flash('注册成功，请登录', 'success')
             return redirect('/login')
-        except sqlite3.IntegrityError as e:
-            flash(f"出现错误[{e}],用户名重复", "danger")
+        except sqlite3.IntegrityError:
+            flash('用户名已存在', 'danger')
             conn.close()
-            return render_template('register.html')
     return render_template('register.html')
 
 @app.route('/profile/<username>', methods=['GET'])
@@ -146,11 +164,13 @@ def logout():
 def edit_profile():
     conn = get_db_connection()
     try:
-       conn.execute('UPDATE users SET username = ? , bio = ? , email = ? WHERE id = ?',(request.form['username'], request.form['bio'], request.form['email'], current_user.id))
-       conn.commit()
-       current_user.username = request.form['username']
-    except sqlite3.IntegrityError as e:
-        flash(f"出现错误[{e}]!","danger")
+        conn.execute('UPDATE users SET username = ?, bio = ?, email = ? WHERE id = ?',
+                    (request.form['username'], request.form['bio'], request.form['email'], current_user.id))
+        conn.commit()
+        current_user.username = request.form['username']
+        flash('资料更新成功', 'success')
+    except sqlite3.IntegrityError:
+        flash('用户名已存在', 'danger')
     finally:
         conn.close()
     return redirect(url_for("profile", username=current_user.username))
@@ -159,21 +179,16 @@ def edit_profile():
 @login_required
 def add():
     if request.method == 'POST':
-        try:
-            title = request.form['title']
-            body = request.form['body']
-            conn = get_db_connection()
-
-            conn.execute("INSERT INTO articles (title,body, author,date) VALUES (?, ?,?, ?)",(title,body, current_user.username,datetime.datetime.now().strftime("%Y-%m-%d")))
-            conn.commit()
-            conn.close()
-
-            flash("文章发布成功", "success")
-            return redirect(url_for("add"))
-            
-        except Exception as e:
-            flash(f"发布失败: {e}", "danger")
-            return redirect(url_for("add"))
+        conn = get_db_connection()
+        conn.execute(
+            "INSERT INTO articles (title, body, author, date) VALUES (?, ?, ?, ?)",
+            (request.form['title'], request.form['body'], current_user.username,
+             datetime.datetime.now().strftime("%Y-%m-%d"))
+        )
+        conn.commit()
+        conn.close()
+        flash('文章发布成功', 'success')
+        return redirect(url_for('add'))
     return render_template('add.html')
 
 @app.route("/articles_list", methods=['GET'])
@@ -184,39 +199,47 @@ def article_list():
     return render_template('articles_list.html', articles=art)
 
 @app.route("/article/<int:article_id>", methods=['GET'])
-@login_required
 def article_detail(article_id):
     conn = get_db_connection()
     det = conn.execute("SELECT * FROM articles WHERE id = ?", (article_id,)).fetchone()
-
     if det is None:
         conn.close()
-        return "题目不存在",404
-
+        return "文章不存在", 404
     conn.close()
     return render_template('article_detail.html', detail=det)
 
-@app.route("/announcement/<action>", methods=['POST'])
+@app.route("/announcement/add", methods=['POST'])
 @login_required
-def announcement(action):
+def announcement_add():
     conn = get_db_connection()
-    if action == "add":
-        conn.execute("INSERT INTO announcement (title, body,date) VALUES (?, ?, ?) ",(request.form['title'], request.form['body'],datetime.datetime.now().strftime("%Y-%m-%d")))
-
-    elif action == "delete":
-        conn.execute("DELETE FROM announcement WHERE id = ?",(request.form['id'],))
+    conn.execute(
+        "INSERT INTO announcement (title, body, date) VALUES (?, ?, ?)",
+        (request.form['title'], request.form['body'], datetime.datetime.now().strftime("%Y-%m-%d"))
+    )
     conn.commit()
     conn.close()
-    return redirect(url_for("admin"))
+    flash('公告发布成功', 'success')
+    return redirect(url_for('admin'))
+
+@app.route("/announcement/delete", methods=['POST'])
+@login_required
+def announcement_delete():
+    conn = get_db_connection()
+    conn.execute("DELETE FROM announcement WHERE id = ?", (request.form['id'],))
+    conn.commit()
+    conn.close()
+    flash('公告已删除', 'success')
+    return redirect(url_for('admin'))
 
 @app.route("/admin")
 @login_required
 def admin():
+    if current_user.role != "admin":
+        abort(403)
     conn = get_db_connection()
     ann = conn.execute("SELECT * FROM announcement").fetchall()
     conn.close()
     return render_template('admin.html', announcements=ann)
-
 
 @app.route('/')
 def index():
@@ -227,7 +250,6 @@ def index():
     ann = conn.execute("SELECT * FROM announcement").fetchall()
     articles = conn.execute("SELECT * FROM articles ORDER BY date DESC LIMIT 5").fetchall()
     conn.close()
-
 
     stats = {'articles': articles_num, 'users': users_num, 'files': files_num}
     
@@ -245,4 +267,3 @@ def index():
 
 if __name__ == '__main__':
     app.run(debug=True)
-

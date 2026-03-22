@@ -16,6 +16,7 @@
     {% endwith %}
 
     <form method="POST" action="/register">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-group">
             <label>用户名</label>
             <input type="text" name="username" placeholder="选择一个用户名" required>

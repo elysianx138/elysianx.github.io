@@ -21,6 +21,7 @@
     <p class="form-sub">支持多文件上传</p>
 
     <form method="POST" action="/uploads" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-group">
             <label>选择文件</label>
             <input type="file" name="file" id="fileInput" required onchange="updateFileName()">

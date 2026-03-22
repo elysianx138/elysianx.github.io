@@ -16,6 +16,7 @@
     {% endwith %}
 
     <form method="POST" action="/add">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-group">
             <label>标题</label>
             <input type="text" name="title" placeholder="给文章起个标题" required>

@@ -20,6 +20,7 @@
 <div class="admin-card">
     <div class="admin-card-title">发布公告</div>
     <form action="/announcement/add" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-group">
             <label>公告标题</label>
             <input type="text" name="title" placeholder="输入公告标题" required>
@@ -45,6 +46,7 @@
             </div>
             <div class="admin-item-date">{{ a.date }}</div>
             <form action="/announcement/delete" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="id" value="{{ a.id }}">
                 <button type="submit" class="admin-item-del" onclick="return confirm('确定删除这条公告？')">x</button>
             </form>

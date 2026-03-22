@@ -45,6 +45,7 @@
             <button onclick="closeEditModal()" style="background:none; border:1px solid var(--border); color:var(--text-secondary); width:32px; height:32px; border-radius:8px; cursor:pointer; font-size:13px;">X</button>
         </div>
         <form method="POST" action="/edit_profile">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-group">
                 <label>用户名</label>
                 <input type="text" name="username" value="{{ user.username }}" required>
