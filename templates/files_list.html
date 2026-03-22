@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block title %}文件库 - MyBlog{% endblock %}
+{% block content %}
+<div class="main-wrapper">
+    <div>
+        <div class="page-header">
+            <h1>文件仓库</h1>
+            <p>共 {{ f_list|length }} 个文件</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-container">
+            {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <div class="search-bar">
+            <input type="text" placeholder="搜索文件名..." id="searchInput">
+        </div>
+
+        {% if f_list %}
+        <div class="file-grid">
+            {% for file in f_list %}
+            <div class="file-card" data-name="{{ file.filename }}">
+                <div class="file-badge" data-ext="{{ file.filename.split('.')[-1].lower() }}">.{{ file.filename.split('.')[-1].lower() }}</div>
+                <div class="file-info">
+                    <div class="file-name" title="{{ file.filename }}">{{ file.filename }}</div>
+                    <div class="file-meta">
+                        <span class="file-uploader">{{ file.uploader }}</span>
+                        <span>{{ file.date }}</span>
+                    </div>
+                </div>
+                <div class="file-actions">
+                    <a href="/{{ file.filepath }}" target="_blank" class="file-btn file-btn-download" title="下载">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    </a>
+                    <a href="/{{ file.filepath }}" target="_blank" class="file-btn file-btn-view" title="预览">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p>暂无文件</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="sidebar">
+        <div class="widget">
+            <div class="widget-header">站点统计</div>
+            <div class="widget-body">
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-num">{{ f_list|length }}</div>
+                        <div class="stat-lbl">文件</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const searchInput = document.getElementById('searchInput');
+if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+        const q = e.target.value.toLowerCase();
+        document.querySelectorAll('.file-card').forEach(card => {
+            card.style.display = card.dataset.name.toLowerCase().includes(q) ? '' : 'none';
+        });
+    });
+}
+</script>
+{% endblock %}

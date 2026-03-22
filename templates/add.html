@@ -1,124 +1,31 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>发布文章 - MyBlog</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/add.css') }}">
-    <style>
-        .flash {
-            position: fixed;
-            top: 80px;
-            left: 0;
-            right: 0;
-            padding: 16px 32px;
-            background: rgba(34, 197, 94, 0.25);
-            border: 2px solid #22c55e;
-            color: #4ade80;
-            font-size: 15px;
-            text-align: center;
-            z-index: 10001;
-            transform: translateX(-100%);
-            transition: transform 0.3s ease-out;
-        }
-        .flash.show {
-            transform: translateX(0);
-        }
-        .flash.hide {
-            transform: translateX(100%);
-        }
-    </style>
-</head>
-<body>
+{% extends 'base.html' %}
+{% block title %}写文章 - MyBlog{% endblock %}
+{% block content %}
+<div class="form-card" style="margin-top: 20px;">
+    <div class="form-title">写点什么</div>
+    <p class="form-sub">分享你的想法，记录你的故事</p>
+
     {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
+    {% if messages %}
+    <div class="flash-container">
         {% for category, message in messages %}
-          <div class="flash flash-{{ category }}">{{ message }}</div>
+        <div class="flash flash-{{ category }}">{{ message }}</div>
         {% endfor %}
-      {% endif %}
+    </div>
+    {% endif %}
     {% endwith %}
 
-    <div class="bg-gradient"></div>
-
-    <nav class="navbar">
-        <div class="nav-content">
-            <a href="/" class="nav-brand">
-                <div class="nav-logo">
-                    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                        <path d="M2 17l10 5 10-5"/>
-                        <path d="M2 12l10 5 10-5"/>
-                    </svg>
-                </div>
-                <span class="nav-title">MyBlog</span>
-            </a>
-
-            <div class="nav-links">
-                <a href="/" class="nav-link">首页</a>
-                <a href="/articles_list" class="nav-link">文章</a>
-                <a href="/add" class="nav-link">写文</a>
-            </div>
-
-            <div class="nav-user">
-                {% if current_user.is_authenticated %}
-                <a href="/profile/{{ current_user.username }}" class="nav-btn nav-btn-outline">{{ current_user.username }}</a>
-                <a href="/logout" class="nav-btn nav-btn-primary">退出</a>
-                {% else %}
-                <a href="/login" class="nav-btn nav-btn-outline">登录</a>
-                <a href="/register" class="nav-btn nav-btn-primary">注册</a>
-                {% endif %}
-            </div>
+    <form method="POST" action="/add">
+        <div class="form-group">
+            <label>标题</label>
+            <input type="text" name="title" placeholder="给文章起个标题" required>
         </div>
-    </nav>
-
-    <main class="main-container">
-        <div class="write-card">
-            <div class="card-header">
-                <h1 class="card-title">发布文章</h1>
-                <p class="card-subtitle">分享你的想法，记录你的故事</p>
-            </div>
-
-            <form method="POST" action="/add" class="write-form">
-                <div class="form-group">
-                    <label class="form-label">标题</label>
-                    <input type="text" name="title" class="form-input" placeholder="输入文章标题..." required>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">内容</label>
-                    <textarea name="body" class="form-textarea" placeholder="写下你的内容..." required></textarea>
-                </div>
-
-                <div class="form-actions">
-                    <a href="/" class="btn-cancel">取消</a>
-                    <button type="submit" class="btn-submit">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M22 2L11 13"/>
-                            <path d="M22 2L15 22L11 13L2 9L22 2Z"/>
-                        </svg>
-                        发布文章
-                    </button>
-                </div>
-            </form>
+        <div class="form-group">
+            <label>内容</label>
+            <textarea name="body" placeholder="写下你的内容..." required></textarea>
         </div>
-    </main>
-
-    <script>
-        const flashes = document.querySelectorAll('.flash');
-        if (flashes.length > 0) {
-            flashes.forEach(flash => {
-                flash.classList.add('show');
-            });
-            setTimeout(() => {
-                flashes.forEach(flash => {
-                    flash.classList.remove('show');
-                    flash.classList.add('hide');
-                });
-            }, 1500);
-        }
-    </script>
-</body>
-</html>
+        <button type="submit" class="btn-submit">发布文章</button>
+        <a href="/" class="btn-secondary">取消</a>
+    </form>
+</div>
+{% endblock %}

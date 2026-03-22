@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}上传文件 - MyBlog{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>上传文件</h1>
+    <p>分享你的资料</p>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="flash-container">
+    {% for category, message in messages %}
+    <div class="flash flash-{{ category }}">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
+<div class="form-card">
+    <div class="form-title">上传文件</div>
+    <p class="form-sub">支持多文件上传</p>
+
+    <form method="POST" action="/uploads" enctype="multipart/form-data">
+        <div class="form-group">
+            <label>选择文件</label>
+            <input type="file" name="file" id="fileInput" required onchange="updateFileName()">
+            <div id="fileNameDisplay" class="file-name-display"></div>
+        </div>
+        <button type="submit" class="btn-submit">上传</button>
+        <a href="/files_list" class="btn-secondary">取消</a>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updateFileName() {
+    var input = document.getElementById('fileInput');
+    var display = document.getElementById('fileNameDisplay');
+    if (input.files.length > 0) {
+        display.textContent = '已选择: ' + input.files[0].name;
+    } else {
+        display.textContent = '';
+    }
+}
+</script>
+{% endblock %}

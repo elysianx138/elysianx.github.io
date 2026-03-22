@@ -15,6 +15,14 @@ c.execute('''CREATE TABLE IF NOT EXISTS articles
             author TEXT NOT NULL,
             date TEXT NOT NULL)''')
 
+# 文件上传
+c.execute('''CREATE TABLE IF NOT EXISTS files 
+            (id INTEGER PRIMARY KEY AUTOINCREMENT,
+             filepath TEXT NOT NULL,
+             filename TEXT NOT NULL,
+             uploader Text NOT NULL,
+             date TEXT NOT NULL)''')
+
 # 创建用户表
 c.execute('''CREATE TABLE IF NOT EXISTS users
             (id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -24,6 +32,13 @@ c.execute('''CREATE TABLE IF NOT EXISTS users
             role TEXT DEFAULT "visitor",
             bio Text DEFAULT "从前从前有个人爱你很久...")
 ''')
+
+# 创建公告
+c.execute('''CREATE TABLE IF NOT EXISTS announcement
+             (id INTEGER PRIMARY KEY AUTOINCREMENT,
+             title TEXT NOT NULL,
+             body TEXT NOT NULL,
+             date TEXT NOT NULL)''')
 
 conn.commit()
 conn.close()

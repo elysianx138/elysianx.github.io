@@ -1,13 +1,11 @@
+import os
 import sqlite3
-
 import datetime
-from typing import Final
-
 from flask_login import LoginManager, UserMixin, login_user, login_required, current_user, logout_user
-from flask import render_template, request, redirect, flash, url_for
-
+from flask import render_template, request, redirect, flash, url_for, send_from_directory
 import flask
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 
 app = flask.Flask(__name__)
 app.secret_key = "MyBlog"
@@ -15,6 +13,54 @@ app.secret_key = "MyBlog"
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'md', 'txt', 'pdf', 'doc', 'docx'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+if not os.path.exists('uploads'):
+    os.makedirs('uploads')
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory('uploads', filename)
+
+@app.route('/uploads', methods=['POST','GET'])
+@login_required
+def uploads():
+    if request.method == 'GET':
+        return render_template('uploads.html')
+    
+    if 'file' not in request.files:
+        flash('没有文件','danger')
+        return redirect(url_for('files_list'))
+
+    file = request.files['file']
+
+    if file.filename == '':
+        flash("没有文件","danger")
+        return redirect(url_for('index'))
+
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        file.save(os.path.join('uploads', filename))
+        conn = get_db_connection()
+        conn.execute("INSERT INTO files (filepath, filename, uploader,date) VALUES (?, ?, ?, ?)",(f"uploads/{filename}",filename,current_user.username,datetime.datetime.now()))
+        conn.commit()
+        conn.close()
+        flash("文件上传成功","success")
+        return redirect(url_for('files_list'))
+    flash("文件类型不支持","danger")
+    return redirect(url_for('index'))
+
+@app.route('/files_list')
+def files_list():
+    conn = get_db_connection()
+    f_list = conn.execute("SELECT * FROM files").fetchall()
+    conn.close()
+    return render_template("files_list.html",f_list=f_list)
+
 
 def get_db_connection():
     conn = sqlite3.connect("questions.db")
@@ -53,16 +99,23 @@ def login():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    ADMIN_CODE = 'MyBlog2026'
     if request.method == 'POST':
         conn = get_db_connection()
         try:
+            if request.form.get('admin_code') == ADMIN_CODE:
+                role = 'admin'
+            else :
+                role = 'visitor'
+
             conn.execute(
                 "INSERT INTO users (username, password, email, role) VALUES (?, ?, ?, ?)",
                 (request.form['username'], 
                  generate_password_hash(request.form['password']),
                  request.form.get('email', ''),
-                 'visitor')
+                 role)
             )
+
             conn.commit()
             conn.close()
             return redirect('/login')
@@ -143,20 +196,40 @@ def article_detail(article_id):
     conn.close()
     return render_template('article_detail.html', detail=det)
 
+@app.route("/announcement/<action>", methods=['POST'])
+@login_required
+def announcement(action):
+    conn = get_db_connection()
+    if action == "add":
+        conn.execute("INSERT INTO announcement (title, body,date) VALUES (?, ?, ?) ",(request.form['title'], request.form['body'],datetime.datetime.now().strftime("%Y-%m-%d")))
+
+    elif action == "delete":
+        conn.execute("DELETE FROM announcement WHERE id = ?",(request.form['id'],))
+    conn.commit()
+    conn.close()
+    return redirect(url_for("admin"))
+
+@app.route("/admin")
+@login_required
+def admin():
+    conn = get_db_connection()
+    ann = conn.execute("SELECT * FROM announcement").fetchall()
+    conn.close()
+    return render_template('admin.html', announcements=ann)
+
 
 @app.route('/')
 def index():
-    articles = [
-        {'title': '示例文章标题', 'tag': '技术', 'author': '作者A', 'date': '2026-03-18'},
-        {'title': '示例文章标题', 'tag': '设计', 'author': '作者B', 'date': '2026-03-17'},
-        {'title': '示例文章标题', 'tag': '产品', 'author': '作者C', 'date': '2026-03-16'},
-    ]
-    users = [
-        {'name': '用户A', 'role': '管理员'},
-        {'name': '用户B', 'role': '作者'},
-        {'name': '用户C', 'role': '用户'},
-    ]
-    stats = {'articles': 0, 'users': 0, 'files': 0}
+    conn = get_db_connection()
+    articles_num = conn.execute("SELECT COUNT(*) as count FROM articles").fetchone()['count']
+    users_num = conn.execute("SELECT COUNT(*) as count FROM users").fetchone()['count']
+    files_num = conn.execute("SELECT COUNT(*) as count FROM files").fetchone()['count']
+    ann = conn.execute("SELECT * FROM announcement").fetchall()
+    articles = conn.execute("SELECT * FROM articles ORDER BY date DESC LIMIT 5").fetchall()
+    conn.close()
+
+
+    stats = {'articles': articles_num, 'users': users_num, 'files': files_num}
     
     return render_template('index.html',
         title='首页',
@@ -164,10 +237,10 @@ def index():
         hero_subtitle='分享你的想法，记录你的故事',
         article_label='文章',
         articles=articles,
-        users=users,
         stats=stats,
         footer_text='© 2026 MyBlog',
-        current_user=current_user
+        current_user=current_user,
+        announcements=ann
     )
 
 if __name__ == '__main__':

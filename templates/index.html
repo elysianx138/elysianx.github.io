@@ -1,226 +1,148 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MyBlog - 首页</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
-</head>
-<body>
-    <div class="bg-gradient"></div>
-
-    <!-- Navigation -->
-    <nav class="navbar">
-        <div class="nav-content">
-            <div class="nav-brand">
-                <div class="nav-logo">
-                    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                        <path d="M2 17l10 5 10-5"/>
-                        <path d="M2 12l10 5 10-5"/>
-                    </svg>
-                </div>
-                <span class="nav-title">MyBlog</span>
-            </div>
-
-            <div class="nav-links">
-                <a href="/" class="nav-link">首页</a>
-                <a href="/articles_list" class="nav-link">文章</a>
-                <a href="/add" class="nav-link">写文</a>
+{% extends 'base.html' %}
+{% block title %}首页 - MyBlog{% endblock %}
+{% block content %}
+<div class="main-wrapper">
+    <!-- Left: Main Content -->
+    <div>
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1>
                 {% if current_user.is_authenticated %}
-                <a href="/profile/{{ current_user.username }}" class="nav-link">我的</a>
-                {% endif %}
-            </div>
-
-            <div class="nav-user">
-                {% if current_user.is_authenticated %}
-                <a href="/profile/{{ current_user.username }}" class="nav-btn nav-btn-outline">{{ current_user.username }}</a>
-                <a href="/logout" class="nav-btn nav-btn-primary">退出</a>
+                {{ current_user.username }}，欢迎回来
                 {% else %}
-                <a href="/login" class="nav-btn nav-btn-outline">登录</a>
-                <a href="/register" class="nav-btn nav-btn-primary">注册</a>
+                欢迎来到 MyBlog
                 {% endif %}
-            </div>
-        </div>
-    </nav>
-
-    <!-- Main Content -->
-    <main class="main-container">
-        <!-- Hero Section -->
-        <section class="hero">
-            <h1 class="hero-title">欢迎来到 <span>MyBlog</span></h1>
-            <p class="hero-subtitle">分享你的想法，记录你的故事。在这里，每个人都是创作者。</p>
-        </section>
-
-        <!-- Stats Section -->
-        <section class="stats">
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <polyline points="14 2 14 8 20 8"/>
-                        <line x1="16" y1="13" x2="8" y2="13"/>
-                        <line x1="16" y1="17" x2="8" y2="17"/>
-                    </svg>
-                </div>
-                <div class="stat-number">{{ stats.articles }}</div>
-                <div class="stat-label">文章总数</div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                        <circle cx="9" cy="7" r="4"/>
-                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                    </svg>
-                </div>
-                <div class="stat-number">{{ stats.users }}</div>
-                <div class="stat-label">注册用户</div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                        <polyline points="17 8 12 3 7 8"/>
-                        <line x1="12" y1="3" x2="12" y2="15"/>
-                    </svg>
-                </div>
-                <div class="stat-number">{{ stats.files }}</div>
-                <div class="stat-label">上传文件</div>
-            </div>
-        </section>
-
-        <!-- Upload Section -->
-        <section class="upload-section">
-            <div class="section-header">
-                <h2 class="section-title">快速<span>上传</span></h2>
-            </div>
-
-            <div class="upload-area">
-                <div class="upload-card" onclick="triggerUpload()">
-                    <div class="upload-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                            <polyline points="17 8 12 3 7 8"/>
-                            <line x1="12" y1="3" x2="12" y2="15"/>
-                        </svg>
-                    </div>
-                    <h3 class="upload-title">拖拽文件到此处</h3>
-                    <p class="upload-desc">或点击按钮选择文件</p>
-                    <button class="upload-btn" type="button">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                            <polyline points="17 8 12 3 7 8"/>
-                            <line x1="12" y1="3" x2="12" y2="15"/>
-                        </svg>
-                        选择文件
-                    </button>
-                    <input type="file" id="fileInput" style="display: none;" multiple>
-                </div>
-
-                <div class="upload-tips">
-                    <h4>上传须知</h4>
-                    <ul>
-                        <li>支持拖拽或点击上传</li>
-                        <li>支持多文件上传</li>
-                        <li>单个文件不超过 50MB</li>
-                        <li>支持格式：图片、文档、压缩包</li>
-                    </ul>
-                </div>
-            </div>
-        </section>
-
-        <!-- Content Grid -->
-        <div class="content-grid">
-            <!-- Article List -->
-            <section>
-                <div class="section-header">
-                    <h2 class="section-title">最新<span>文章</span></h2>
-                    <a href="/articles_list" class="section-link">
-                        查看全部
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="5" y1="12" x2="19" y2="12"/>
-                            <polyline points="12 5 19 12 12 19"/>
-                        </svg>
-                    </a>
-                </div>
-
-                <div class="article-list">
-                    {% for article in articles %}
-                    <article class="article-card">
-                        <div class="article-thumb">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                <polyline points="14 2 14 8 20 8"/>
-                            </svg>
-                        </div>
-                        <div class="article-content">
-                            <span class="article-tag">{{ article.tag }}</span>
-                            <h3 class="article-title">{{ article.title }}</h3>
-                            <div class="article-meta">
-                                <span>
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                                        <circle cx="12" cy="7" r="4"/>
-                                    </svg>
-                                    {{ article.author }}
-                                </span>
-                                <span>
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                                        <line x1="16" y1="2" x2="16" y2="6"/>
-                                        <line x1="8" y1="2" x2="8" y2="6"/>
-                                        <line x1="3" y1="10" x2="21" y2="10"/>
-                                    </svg>
-                                    {{ article.date }}
-                                </span>
-                            </div>
-                        </div>
-                    </article>
-                    {% endfor %}
-                </div>
-            </section>
-
-            <!-- User List -->
-            <section class="user-section">
-                <div class="section-header">
-                    <h2 class="section-title">活跃<span>用户</span></h2>
-                    <a href="/users" class="section-link">
-                        查看全部
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="5" y1="12" x2="19" y2="12"/>
-                            <polyline points="12 5 19 12 12 19"/>
-                        </svg>
-                    </a>
-                </div>
-
-                <div class="user-list">
-                    {% for user in users %}
-                    <div class="user-card">
-                        <div class="user-avatar">{{ user.name[0] }}</div>
-                        <div class="user-info">
-                            <div class="user-name">{{ user.name }}</div>
-                            <div class="user-role">{{ user.role }}</div>
-                        </div>
-                        <span class="user-badge">活跃</span>
-                    </div>
-                    {% endfor %}
-                </div>
-            </section>
+            </h1>
+            <p>记录思想，分享见解</p>
         </div>
 
-        <!-- Footer -->
-        <footer class="footer">
-            <p class="footer-text">© 2026 MyBlog. Made with <span>♥</span></p>
-        </footer>
-    </main>
+        {% if not current_user.is_authenticated %}
+        <div class="card" style="margin-bottom:24px; text-align:center;">
+            <p style="font-size:14px; color:var(--text-secondary); margin-bottom:14px;">加入我们，开始你的创作之旅</p>
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <a href="/register" class="btn-secondary" style="width:auto; padding:10px 24px; text-decoration:none;">注册账号</a>
+                <a href="/login" class="btn-secondary" style="width:auto; padding:10px 24px; text-decoration:none;">已有账号</a>
+            </div>
+        </div>
+        {% endif %}
 
-    <script src="{{ url_for('static', filename='js/index.js') }}"></script>
-</body>
-</html>
+        <!-- Articles Section -->
+        <div class="card" style="margin-bottom:20px;">
+            <div class="card-title" style="justify-content:space-between;">
+                <span style="display:flex;align-items:center;gap:8px;">
+                    <span style="width:4px;height:16px;background:var(--accent);border-radius:2px;"></span>
+                    最新文章
+                </span>
+                <a href="/articles_list" style="font-size:12px; color:var(--accent); font-weight:400;">查看全部</a>
+            </div>
+
+            {% if articles %}
+            <div class="article-list">
+                {% for article in articles %}
+                <div class="article-card" onclick="location.href='/article/{{ article.id }}'">
+                    <div class="article-thumb">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    </div>
+                    <div class="article-body">
+                        <div class="article-top">
+                            <!--<span class="article-tag">{{ article.tag }}</span>-->
+                            <span class="article-date">{{ article.date }}</span>
+                        </div>
+                        <h3 class="article-title">{{ article.title }}</h3>
+                        <div class="article-footer">
+                            <span class="article-author">{{ article.author }}</span>
+                            <span class="article-link">阅读全文</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <p>暂无文章</p>
+                <a href="/add" style="color:var(--accent); font-size:13px;">写第一篇</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Right: Sidebar -->
+    <div class="sidebar">
+
+        <!-- Site Stats -->
+        <div class="widget">
+            <div class="widget-header">站点统计</div>
+            <div class="widget-body">
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-num">{{ stats.articles }}</div>
+                        <div class="stat-lbl">文章</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-num">{{ stats.users }}</div>
+                        <div class="stat-lbl">用户</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-num">{{ stats.files }}</div>
+                        <div class="stat-lbl">文件</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-num">—</div>
+                        <div class="stat-lbl">访问</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Announcements -->
+        {% if announcements %}
+        <div class="widget">
+            <div class="widget-header">公告</div>
+            <div class="widget-body" style="padding:14px 18px;">
+                {% for a in announcements %}
+                <div class="announcement-item">
+                    <div class="ann-title">{{ a.title }}</div>
+                    <div class="md-body ann-body">{{ a.body }}</div>
+                    <div class="ann-date">{{ a.date }}</div>
+                    {% if current_user.is_authenticated and current_user.role == 'admin' %}
+                    <form action="/announcement/delete" method="POST" style="margin-top:4px;">
+                        <input type="hidden" name="id" value="{{ a.id }}">
+                        <button type="submit" class="ann-del" onclick="return confirm('确定删除？')">删除</button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Quick Links -->
+        <div class="widget">
+            <div class="widget-header">快捷入口</div>
+            <div class="widget-body" style="padding:10px 14px;">
+                <div class="quick-links">
+                    <a href="/articles_list" class="quick-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        文章列表
+                    </a>
+                    <a href="/files_list" class="quick-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                        文件资料
+                    </a>
+                    <a href="/add" class="quick-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        写篇文章
+                    </a>
+                    {% if current_user.is_authenticated %}
+                    <a href="/profile/{{ current_user.username }}" class="quick-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        我的资料
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
