@@ -5,7 +5,7 @@
     <div>
         <div class="page-header">
             <h1>文件仓库</h1>
-            <p>共 {{ f_list|length }} 个文件</p>
+            <p>共 {{ total }} 个文件</p>
         </div>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -50,6 +50,20 @@
             <p>暂无文件</p>
         </div>
         {% endif %}
+
+        {% if total_pages > 1 %}
+        <div class="pagination">
+            {% if page > 1 %}
+            <a href="?page={{ page - 1 }}" class="page-btn">上一页</a>
+            {% endif %}
+            {% for p in range(1, total_pages + 1) %}
+            <a href="?page={{ p }}" class="page-btn {% if p == page %}active{% endif %}">{{ p }}</a>
+            {% endfor %}
+            {% if page < total_pages %}
+            <a href="?page={{ page + 1 }}" class="page-btn">下一页</a>
+            {% endif %}
+        </div>
+        {% endif %}
     </div>
 
     <div class="sidebar">
@@ -58,7 +72,7 @@
             <div class="widget-body">
                 <div class="stats-grid">
                     <div class="stat-item">
-                        <div class="stat-num">{{ f_list|length }}</div>
+                        <div class="stat-num">{{ total }}</div>
                         <div class="stat-lbl">文件</div>
                     </div>
                 </div>

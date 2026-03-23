@@ -77,9 +77,17 @@ def uploads():
 @app.route('/files_list')
 def files_list():
     conn = get_db_connection()
-    f_list = conn.execute("SELECT * FROM files").fetchall()
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
+    offset = (page - 1) * per_page
+
+    f_list = conn.execute("SELECT * FROM files ORDER BY date DESC LIMIT ? OFFSET ?",(per_page,offset)).fetchall()
+    total = conn.execute("SELECT COUNT(*) as count FROM files").fetchone()['count']
+
     conn.close()
-    return render_template("files_list.html", f_list=f_list)
+    total_pages = (total + per_page - 1) // per_page
+    return render_template("files_list.html", f_list=f_list,total_pages=total_pages,page=page,per_page=per_page,total = total)
+
 
 def get_db_connection():
     conn = sqlite3.connect("questions.db")
@@ -146,12 +154,19 @@ def register():
 @app.route('/profile/<username>', methods=['GET'])
 @login_required
 def profile(username):
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
+    offset = (page-1) * per_page
+
     conn = get_db_connection()
+    total = conn.execute("SELECT COUNT(*) as count FROM articles WHERE author = ? ORDER BY date DESC LIMIT = ? OFFSET = ?",(username,per_page,offset)).fetchone()['count']
     u = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
+    u_articles = conn.execute("SELECT * FROM articles WHERE author = ?", (username,)).fetchall()
     conn.close()
+    total_pages = (total + per_page - 1) // per_page
     if u is None:
         return "用户不存在", 404
-    return render_template('profile.html', user=u)
+    return render_template('profile.html', user=u,user_articles=u_articles,page=page,per_page=per_page,total_pages=total_pages,total = total)
 
 @app.route('/logout')
 @login_required
@@ -193,10 +208,17 @@ def add():
 
 @app.route("/articles_list", methods=['GET'])
 def article_list():
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
+    offset = (page - 1) * per_page
+
     conn = get_db_connection()
-    art = conn.execute("SELECT * FROM articles").fetchall()
+    total = conn.execute("SELECT COUNT(*) as count FROM articles").fetchone()['count']
+
+    art = conn.execute("SELECT * FROM articles ORDER BY date DESC LIMIT ? OFFSET ? ",(per_page,offset)).fetchall()
     conn.close()
-    return render_template('articles_list.html', articles=art)
+    total_pages = (total + per_page - 1) // per_page
+    return render_template('articles_list.html', articles=art, total_pages=total_pages, page=page, per_page=per_page , total = total)
 
 @app.route("/article/<int:article_id>", methods=['GET'])
 def article_detail(article_id):
@@ -207,6 +229,37 @@ def article_detail(article_id):
         return "文章不存在", 404
     conn.close()
     return render_template('article_detail.html', detail=det)
+
+@app.route("/article/<int:article_id>/<action>", methods=['POST',"GET"])
+@login_required
+def edit_article(action,article_id):
+    conn = get_db_connection()
+    article = conn.execute("SELECT * FROM articles WHERE id = ?", (article_id,)).fetchone()
+    if article is None:
+        conn.close()
+        return "文章不存在", 404
+    if request.method == 'POST':
+        if action == 'delete':
+            if article['author'] == current_user.username or current_user.role == 'admin':
+                conn.execute("DELETE FROM articles WHERE id = ?", (article_id,))
+                conn.commit()
+                conn.close()
+                flash("删除成功", "success")
+                return redirect(url_for('article_list'))
+            flash("删除失败", "danger")
+            return redirect(url_for('article_list'))
+
+        if action == 'edit':
+            if article['author'] == current_user.username:
+                conn.execute("UPDATE articles SET title = ?, body = ?, date = ? WHERE id = ?",(request.form['title'], request.form['body'], datetime.datetime.now().strftime("%Y-%m-%d"), article_id))
+                conn.commit()
+                conn.close()
+                flash("编辑成功", "success")
+                return redirect(url_for('article_list'))
+            flash("编辑失败", "danger")
+            return redirect(url_for('article_detail', article_id=article_id))
+    return render_template('edit_article.html', article=article)
+
 
 @app.route("/announcement/add", methods=['POST'])
 @login_required

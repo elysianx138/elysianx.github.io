@@ -12,6 +12,7 @@
     --accent: #b8860b;
     --accent-light: rgba(184, 134, 11, 0.08);
     --accent-border: rgba(184, 134, 11, 0.25);
+    --danger: #c0392b;
     --border: #e8e4de;
     --border-light: #f0ece6;
     --shadow: 0 2px 8px rgba(0,0,0,0.06);
@@ -637,6 +638,33 @@ a:hover { text-decoration: underline; }
     border: none;
     border-top: 1px solid var(--border);
     margin: 1.5em 0;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+}
+.page-btn {
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+.page-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.page-btn.active {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
 }
 
 @media (max-width: 768px) {
