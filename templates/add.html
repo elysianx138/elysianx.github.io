@@ -1,32 +1,259 @@
 {% extends 'base.html' %}
 {% block title %}写文章 - MyBlog{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/editor.css') }}">
+{% endblock %}
 {% block content %}
-<div class="form-card" style="margin-top: 20px;">
-    <div class="form-title">写点什么</div>
-    <p class="form-sub">分享你的想法，记录你的故事</p>
+<div class="editor-wrapper-new">
+    <div class="editor-main-new">
+        <div class="form-card-new">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div class="flash-container">
+                {% for category, message in messages %}
+                <div class="flash flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-    <div class="flash-container">
-        {% for category, message in messages %}
-        <div class="flash flash-{{ category }}">{{ message }}</div>
-        {% endfor %}
+            <form method="POST" action="/add" id="articleForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-group">
+                    <label>标题</label>
+                    <input type="text" name="title" class="title-input" tabindex="0" placeholder="给文章起个标题" required>
+                </div>
+
+                <div class="toolbar-new" role="toolbar" aria-label="格式工具栏">
+                    <button type="button" class="tool-btn-new" tabindex="0" data-key="b" onclick="insertFormat('**', '**')" title="粗体 (Ctrl+B)">
+                        <strong>B</strong>
+                    </button>
+                    <button type="button" class="tool-btn-new" tabindex="0" data-key="i" onclick="insertFormat('*', '*')" title="斜体 (Ctrl+I)">
+                        <em>I</em>
+                    </button>
+                    <button type="button" class="tool-btn-new" tabindex="0" data-key="s" onclick="insertFormat('~~', '~~')" title="删除线">
+                        <s>S</s>
+                    </button>
+                    <span class="toolbar-divider" role="separator"></span>
+                    <button type="button" class="tool-btn-new" tabindex="0" data-key="h" onclick="insertFormat('## ', '')" title="标题">
+                        标题
+                    </button>
+                    <button type="button" class="tool-btn-new" tabindex="0" data-key="q" onclick="insertFormat('> ', '')" title="引用">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V21"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3"/></svg>
+                    </button>
+                    <button type="button" class="tool-btn-new" tabindex="0" data-key="u" onclick="insertFormat('- ', '')" title="无序列表">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                    </button>
+                    <button type="button" class="tool-btn-new" tabindex="0" data-key="o" onclick="insertFormat('1. ', '')" title="有序列表">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/></svg>
+                    </button>
+                    <span class="toolbar-divider" role="separator"></span>
+                    <button type="button" class="tool-btn-new" tabindex="0" data-key="c" onclick="insertFormat('```\n', '\n```')" title="代码块">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                    </button>
+                    <button type="button" class="tool-btn-new" tabindex="0" data-key="k" onclick="insertFormat('[', '](url)')" title="链接 (Ctrl+K)">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                    </button>
+                    <button type="button" class="tool-btn-new" tabindex="0" data-key="d" onclick="insertFormat('---', '')" title="分割线">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><line x1="2" y1="12" x2="22" y2="12"/></svg>
+                    </button>
+                    <span class="toolbar-spacer"></span>
+                    <button type="button" class="tool-btn-new tool-btn-toggle" tabindex="0" id="previewToggle" onclick="togglePreview()" title="切换预览">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <span>预览</span>
+                    </button>
+                </div>
+
+                <div class="editor-area-new" style="position:relative;">
+                    <textarea name="body" id="articleBody" class="editor-textarea-new" tabindex="0" placeholder="写下你的内容...
+
+# 使用指南
+## 快捷键
+- Ctrl+B: 粗体
+- Ctrl+I: 斜体
+- Ctrl+K: 链接
+- Ctrl+Enter: 发布
+
+## 工具栏
+点击工具栏按钮快速插入格式
+
+## 引用其他文章
+输入 [[ 唤起文章选择" required></textarea>
+                    <div id="articleSuggestions" class="suggestions-box-new" style="display:none;"></div>
+                </div>
+
+                <div class="form-actions-new">
+                    <button type="submit" class="btn-submit-new" tabindex="0">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        发布文章
+                    </button>
+                    <a href="/" class="btn-cancel-new" tabindex="0">取消</a>
+                </div>
+            </form>
+        </div>
     </div>
-    {% endif %}
-    {% endwith %}
 
-    <form method="POST" action="/add">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div class="form-group">
-            <label>标题</label>
-            <input type="text" name="title" placeholder="给文章起个标题" required>
+    <div class="editor-preview-new" id="previewPanel">
+        <div class="preview-header-new">
+            <span>预览</span>
+            <button type="button" class="preview-close-new" onclick="togglePreview()">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
         </div>
-        <div class="form-group">
-            <label>内容</label>
-            <textarea name="body" placeholder="写下你的内容..." required></textarea>
+        <div class="preview-content-new md-body" id="previewContent">
         </div>
-        <button type="submit" class="btn-submit">发布文章</button>
-        <a href="/" class="btn-secondary">取消</a>
-    </form>
+    </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+const allArticles = {{ all_articles|tojson }};
+const bodyInput = document.getElementById('articleBody');
+const suggestionsBox = document.getElementById('articleSuggestions');
+const previewPanel = document.getElementById('previewPanel');
+const previewContent = document.getElementById('previewContent');
+let showPreview = true;
+
+function insertFormat(before, after) {
+    const start = bodyInput.selectionStart;
+    const end = bodyInput.selectionEnd;
+    const text = bodyInput.value;
+    const selected = text.substring(start, end);
+    
+    const newText = text.substring(0, start) + before + selected + after + text.substring(end);
+    bodyInput.value = newText;
+    
+    if (selected) {
+        bodyInput.selectionStart = start + before.length;
+        bodyInput.selectionEnd = start + before.length + selected.length;
+    } else {
+        bodyInput.selectionStart = bodyInput.selectionEnd = start + before.length;
+    }
+    
+    bodyInput.focus();
+    updatePreview();
+}
+
+function togglePreview() {
+    showPreview = !showPreview;
+    previewPanel.classList.toggle('hidden', !showPreview);
+    document.getElementById('previewToggle').classList.toggle('active', showPreview);
+}
+
+function updatePreview() {
+    if (showPreview) {
+        const content = bodyInput.value;
+        previewContent.innerHTML = marked.parse(content);
+    }
+}
+
+bodyInput.addEventListener('input', function(e) {
+    updatePreview();
+    
+    const cursorPos = this.selectionStart;
+    const textBefore = this.value.substring(0, cursorPos);
+    const match = textBefore.match(/\[\[([^\]]*?)$/);
+    
+    if (match) {
+        const searchTerm = match[1].toLowerCase();
+        const filtered = allArticles.filter(a => a.title.toLowerCase().includes(searchTerm));
+        
+        if (filtered.length > 0) {
+            suggestionsBox.innerHTML = '';
+            filtered.slice(0, 5).forEach(article => {
+                const div = document.createElement('div');
+                div.className = 'suggestion-item-new';
+                div.textContent = article.title;
+                div.onclick = function() {
+                    const before = bodyInput.value.substring(0, textBefore.lastIndexOf('[['));
+                    const after = bodyInput.value.substring(cursorPos);
+                    bodyInput.value = before + '[[' + article.title + ']]' + after;
+                    suggestionsBox.style.display = 'none';
+                    bodyInput.focus();
+                    updatePreview();
+                };
+                suggestionsBox.appendChild(div);
+            });
+            
+            suggestionsBox.style.display = 'block';
+        } else {
+            suggestionsBox.style.display = 'none';
+        }
+    } else {
+        suggestionsBox.style.display = 'none';
+    }
+});
+
+document.addEventListener('click', function(e) {
+    if (!bodyInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
+        suggestionsBox.style.display = 'none';
+    }
+});
+
+document.addEventListener('keydown', function(e) {
+    const titleInput = document.querySelector('input[name="title"]');
+    const toolbarButtons = document.querySelectorAll('.toolbar-new .tool-btn-new');
+    const submitBtn = document.querySelector('.btn-submit-new');
+    const cancelBtn = document.querySelector('.btn-cancel-new');
+    
+    const tabOrder = [titleInput, ...toolbarButtons, bodyInput, submitBtn, cancelBtn];
+    
+    if (e.key === 'Tab') {
+        const activeElement = document.activeElement;
+        const currentIndex = tabOrder.indexOf(activeElement);
+        
+        if (currentIndex !== -1) {
+            e.preventDefault();
+            
+            let nextIndex;
+            if (e.shiftKey) {
+                nextIndex = currentIndex > 0 ? currentIndex - 1 : tabOrder.length - 1;
+            } else {
+                nextIndex = currentIndex < tabOrder.length - 1 ? currentIndex + 1 : 0;
+            }
+            
+            tabOrder[nextIndex].focus();
+        }
+        return;
+    }
+    
+    if (e.ctrlKey || e.metaKey) {
+        switch(e.key.toLowerCase()) {
+            case 'b':
+                e.preventDefault();
+                insertFormat('**', '**');
+                break;
+            case 'i':
+                e.preventDefault();
+                insertFormat('*', '*');
+                break;
+            case 'k':
+                e.preventDefault();
+                insertFormat('[', '](url)');
+                break;
+            case 's':
+                e.preventDefault();
+                break;
+            case 'enter':
+                e.preventDefault();
+                document.getElementById('articleForm').submit();
+                break;
+        }
+    }
+});
+
+document.querySelectorAll('.toolbar-new .tool-btn-new').forEach(function(btn) {
+    btn.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            this.click();
+            bodyInput.focus();
+        }
+    });
+});
+
+updatePreview();
+</script>
 {% endblock %}

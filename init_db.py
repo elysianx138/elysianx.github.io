@@ -13,6 +13,7 @@ c.execute('''CREATE TABLE IF NOT EXISTS articles
             title TEXT NOT NULL,
             body TEXT NOT NULL,
             author TEXT NOT NULL,
+            reference Text,
             date TEXT NOT NULL)''')
 
 # 文件上传

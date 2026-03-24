@@ -18,6 +18,24 @@
             </div>
             <div class="md-body detail-body">{{ detail.body }}</div>
         </div>
+
+        {% if backlinks %}
+        <div class="card" style="margin-top:20px;">
+            <div class="card-title">被这些文章引用</div>
+            <div class="article-list">
+                {% for link in backlinks %}
+                <div class="article-card" onclick="location.href='/article/{{ link.id }}'">
+                    <div class="article-thumb">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    </div>
+                    <div class="article-body">
+                        <h3 class="article-title">{{ link.title }}</h3>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
     </div>
 
     <div class="sidebar">
@@ -30,6 +48,17 @@
                         <div style="font-size:14px;font-weight:600;color:var(--text);">{{ detail.author }}</div>
                         <div style="font-size:11px;color:var(--text-muted);">作者</div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="widget">
+            <div class="widget-header">引用统计</div>
+            <div class="widget-body">
+                <div style="display:flex; flex-direction:column; gap:8px; font-size:13px; color:var(--text-secondary);">
+                    <div>引用了 <strong style="color:var(--accent);">{{ ref_count }}</strong> 篇文章</div>
+                    <div>被 <strong style="color:var(--accent);">{{ backlink_count }}</strong> 篇文章引用</div>
                 </div>
             </div>
         </div>

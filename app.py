@@ -1,4 +1,4 @@
-import os
+import os,re,json
 import sqlite3
 import datetime
 import secrets
@@ -159,7 +159,7 @@ def profile(username):
     offset = (page-1) * per_page
 
     conn = get_db_connection()
-    total = conn.execute("SELECT COUNT(*) as count FROM articles WHERE author = ? ORDER BY date DESC LIMIT = ? OFFSET = ?",(username,per_page,offset)).fetchone()['count']
+    total = conn.execute("SELECT COUNT(*) as count FROM articles WHERE author = ? ORDER BY date DESC LIMIT  ? OFFSET  ?",(username,per_page,offset)).fetchone()['count']
     u = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
     u_articles = conn.execute("SELECT * FROM articles WHERE author = ?", (username,)).fetchall()
     conn.close()
@@ -193,18 +193,35 @@ def edit_profile():
 @app.route("/add", methods=['GET', 'POST'])
 @login_required
 def add():
+    conn = get_db_connection()
     if request.method == 'POST':
-        conn = get_db_connection()
-        conn.execute(
-            "INSERT INTO articles (title, body, author, date) VALUES (?, ?, ?, ?)",
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO articles (title, body, author, date, reference) VALUES (?, ?, ?, ?, '')",
             (request.form['title'], request.form['body'], current_user.username,
              datetime.datetime.now().strftime("%Y-%m-%d"))
         )
+
+        new_article_id = cursor.lastrowid
+        ref_title = re.findall(r'\[\[(.+?)\]\]', request.form['body'])
+        ref_ids = []
+        for title in ref_title:
+            ref = conn.execute("SELECT id FROM articles WHERE title = ?", (title,)).fetchone()
+            if ref:
+                ref_ids.append(ref['id'])
+        if ref_ids:
+            conn.execute("UPDATE articles SET reference = ? WHERE id = ?", (json.dumps(ref_ids), new_article_id))
         conn.commit()
         conn.close()
         flash('文章发布成功', 'success')
         return redirect(url_for('add'))
-    return render_template('add.html')
+    all_articles = [dict(row) for row in conn.execute("SELECT id, title FROM articles").fetchall()]
+    conn.close()
+    return render_template('add.html',all_articles=all_articles)
+
+@app.route("/settings", methods=['GET'])
+def settings():
+    return render_template('settings.html')
 
 @app.route("/articles_list", methods=['GET'])
 def article_list():
@@ -220,15 +237,34 @@ def article_list():
     total_pages = (total + per_page - 1) // per_page
     return render_template('articles_list.html', articles=art, total_pages=total_pages, page=page, per_page=per_page , total = total)
 
+@app.route("/search")
+def search_article():
+    title = request.args.get('title', '')
+    if title:
+        conn = get_db_connection()
+        article = conn.execute("SELECT id FROM articles WHERE title = ?", (title,)).fetchone()
+        conn.close()
+        if article:
+            return redirect(url_for('article_detail', article_id=article['id']))
+    return redirect(url_for('article_list'))
+
 @app.route("/article/<int:article_id>", methods=['GET'])
 def article_detail(article_id):
     conn = get_db_connection()
     det = conn.execute("SELECT * FROM articles WHERE id = ?", (article_id,)).fetchone()
+    backlinks = conn.execute("SELECT id,title FROM articles WHERE reference LIKE ? ", (f'%{article_id}%',)).fetchall()
+    
+    try:
+        ref_count = len(json.loads(det['reference'])) if det['reference'] else 0
+    except:
+        ref_count = 0
+    backlink_count = len(backlinks)
+
     if det is None:
         conn.close()
         return "文章不存在", 404
     conn.close()
-    return render_template('article_detail.html', detail=det)
+    return render_template('article_detail.html', detail=det, backlinks=backlinks, ref_count=ref_count, backlink_count=backlink_count)
 
 @app.route("/article/<int:article_id>/<action>", methods=['POST',"GET"])
 @login_required
@@ -258,7 +294,8 @@ def edit_article(action,article_id):
                 return redirect(url_for('article_list'))
             flash("编辑失败", "danger")
             return redirect(url_for('article_detail', article_id=article_id))
-    return render_template('edit_article.html', article=article)
+    all_articles = [dict(row) for row in conn.execute("SELECT id, title FROM articles").fetchall()]
+    return render_template('edit_article.html', article=article,all_articles=all_articles)
 
 
 @app.route("/announcement/add", methods=['POST'])

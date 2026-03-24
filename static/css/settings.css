@@ -1,0 +1,285 @@
+.settings-page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 20px 40px;
+}
+
+.settings-hero {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px;
+    margin-bottom: 24px;
+    text-align: center;
+}
+
+.settings-hero .hero-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    font-size: 28px;
+    font-weight: 600;
+    margin: 0 0 8px;
+}
+
+.settings-hero .hero-subtitle {
+    font-size: 15px;
+    opacity: 0.9;
+    margin: 0;
+}
+
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+}
+
+.settings-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.settings-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.settings-card .card-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent-light);
+    border-radius: 10px;
+    color: var(--accent);
+    flex-shrink: 0;
+}
+
+.settings-card .card-content {
+    flex: 1;
+}
+
+.settings-card .card-content h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0 0 4px;
+}
+
+.settings-card .card-content p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.settings-card .card-arrow {
+    color: var(--text-muted);
+    transition: transform 0.2s;
+}
+
+.settings-card:hover .card-arrow {
+    transform: translateX(4px);
+    color: var(--accent);
+}
+
+.settings-detail {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    scroll-margin-top: 20px;
+}
+
+.settings-detail .detail-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+.settings-detail .detail-header .detail-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent-light);
+    border-radius: 10px;
+    color: var(--accent);
+    flex-shrink: 0;
+}
+
+.settings-detail .detail-header h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0 0 4px;
+}
+
+.settings-detail .detail-header p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.shortcut-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.shortcut-list .shortcut-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px;
+    background: var(--bg);
+    border-radius: 8px;
+}
+
+.shortcut-list .shortcut-keys {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.shortcut-list .shortcut-keys span {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.shortcut-list .shortcut-keys kbd {
+    min-width: 24px;
+    height: 24px;
+    font-size: 11px;
+}
+
+.shortcut-list .shortcut-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.shortcut-list .shortcut-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+}
+
+.shortcut-list .shortcut-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.markdown-table {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.markdown-table .md-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 14px;
+    background: var(--bg);
+    border-radius: 6px;
+}
+
+.markdown-table .md-syntax {
+    flex: 1;
+    font-family: 'Consolas', monospace;
+}
+
+.markdown-table .md-syntax kbd {
+    font-size: 12px;
+}
+
+.markdown-table .md-result {
+    flex: 1;
+    font-size: 14px;
+    color: var(--text);
+}
+
+.feature-box {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.feature-box .feature-row {
+    display: flex;
+    gap: 14px;
+    padding: 16px;
+    background: var(--bg);
+    border-radius: 8px;
+}
+
+.feature-box .feature-icon-small {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent-light);
+    border-radius: 8px;
+    color: var(--accent);
+    flex-shrink: 0;
+}
+
+.feature-box .feature-text h4 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0 0 6px;
+}
+
+.feature-box .feature-text p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.6;
+}
+
+.feature-box .feature-text code {
+    padding: 2px 6px;
+    background: var(--accent-light);
+    border-radius: 4px;
+    font-family: 'Consolas', monospace;
+    font-size: 12px;
+    color: var(--accent);
+}
+
+@media (max-width: 640px) {
+    .settings-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .shortcut-list,
+    .markdown-table {
+        grid-template-columns: 1fr;
+    }
+    
+    .settings-hero {
+        padding: 30px 20px;
+    }
+    
+    .settings-hero .hero-title {
+        font-size: 22px;
+    }
+}
