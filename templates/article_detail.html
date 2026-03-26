@@ -16,7 +16,24 @@
                     <span>{{ detail.date }}</span>
                 </div>
             </div>
-            <div class="md-body detail-body">{{ detail.body }}</div>
+            <div class="md-body detail-body" id="articleBody">{{ detail.body }}</div>
+            
+            {% if detail.status == 2 and current_user.is_authenticated %}
+            <div style="margin-top:20px; padding:16px; background:var(--bg-secondary); border-radius:8px; display:none;" id="annotationForm">
+                <div style="font-size:13px; font-weight:500; margin-bottom:10px;">添加批注</div>
+                <div id="selectedText" style="font-size:12px; color:var(--text-muted); margin-bottom:8px; font-style:italic;"></div>
+                <textarea id="annotationContent" placeholder="写下你的批注..." style="width:100%; padding:10px; border:1px solid var(--border); border-radius:6px; font-size:13px; margin-bottom:10px; height:60px; background:var(--bg-card);"></textarea>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <span style="font-size:12px; color:var(--text-muted);">颜色:</span>
+                    <span class="color-option" style="width:22px; height:22px; background:#ffeb3b; border-radius:4px; cursor:pointer; border:2px solid #333;" onclick="selectColor(this, '#ffeb3b')"></span>
+                    <span class="color-option" style="width:22px; height:22px; background:#a5d6a7; border-radius:4px; cursor:pointer; border:2px solid transparent;" onclick="selectColor(this, '#a5d6a7')"></span>
+                    <span class="color-option" style="width:22px; height:22px; background:#90caf9; border-radius:4px; cursor:pointer; border:2px solid transparent;" onclick="selectColor(this, '#90caf9')"></span>
+                    <span class="color-option" style="width:22px; height:22px; background:#ce93d8; border-radius:4px; cursor:pointer; border:2px solid transparent;" onclick="selectColor(this, '#ce93d8')"></span>
+                    <button onclick="submitAnnotation()" class="btn-submit" style="margin-left:auto; padding:8px 16px; font-size:12px;">提交</button>
+                    <button onclick="cancelAnnotation()" class="btn-secondary" style="padding:8px 16px; font-size:12px;">取消</button>
+                </div>
+            </div>
+            {% endif %}
         </div>
 
         {% if backlinks %}
@@ -99,6 +116,100 @@
                 </div>
             </div>
         </div>
+        
+        {% if annotations %}
+        <div class="widget">
+            <div class="widget-header">批注 ({{ annotations|length }})</div>
+            <div class="widget-body" style="max-height:300px; overflow-y:auto;">
+                现有: {{ annotations|length }} 条批注
+                {% for ann in annotations %}
+                <div style="padding:10px; margin-bottom:10px; border-radius:6px; background:{{ ann.color }}33; border-left:3px solid {{ ann.color }};">
+                    {% if ann.target_text %}
+                    <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px; font-style:italic;">"{{ ann.target_text }}"</div>
+                    {% endif %}
+                    <div style="font-size:12px; color:var(--text);">{{ ann.content }}</div>
+                    <div style="font-size:10px; color:var(--text-muted); margin-top:4px;">—— {{ ann.author }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div class="widget">
+            <div class="widget-header">批注</div>
+            <div class="widget-body">暂无批注</div>
+        </div>
+        {% endif %}
     </div>
 </div>
+
+<script>
+var selectedColor = '#ffeb3b';
+var csrfToken = '{{ csrf_token() }}';
+var selectedText = '';
+
+// 选中文本添加批注
+document.addEventListener('mouseup', function(e) {
+    {% if detail.status == 2 and current_user.is_authenticated %}
+    var selection = window.getSelection();
+    var text = selection.toString().trim();
+    
+    if (text && text.length > 0) {
+        selectedText = text;
+        document.getElementById('selectedText').textContent = '"' + text.substring(0, 30) + '"';
+        document.getElementById('annotationForm').style.display = 'block';
+        document.getElementById('annotationContent').focus();
+    }
+    {% endif %}
+});
+
+function cancelAnnotation() {
+    document.getElementById('annotationForm').style.display = 'none';
+    document.getElementById('annotationContent').value = '';
+    selectedText = '';
+    window.getSelection().removeAllRanges();
+}
+
+function selectColor(el, color) {
+    selectedColor = color;
+    var colors = document.querySelectorAll('.color-option');
+    for (var i = 0; i < colors.length; i++) {
+        colors[i].style.borderColor = 'transparent';
+    }
+    el.style.borderColor = '#333';
+}
+
+function submitAnnotation() {
+    var content = document.getElementById('annotationContent').value;
+    if (!content.trim()) {
+        alert('请输入批注内容');
+        return;
+    }
+    
+    fetch('/api/annotation/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+            article_id: {{ detail.id }},
+            target_text: selectedText,
+            content: content,
+            position_start: 0,
+            position_end: 0,
+            color: selectedColor
+        })
+    }).then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.error || '提交失败');
+        }
+    })
+    .catch(function(err) {
+        alert('提交失败: ' + err);
+    });
+}
+</script>
 {% endblock %}

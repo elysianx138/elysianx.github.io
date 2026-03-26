@@ -23,6 +23,15 @@
                     <label>标题</label>
                     <input type="text" name="title" class="title-input" tabindex="0" placeholder="给文章起个标题" required>
                 </div>
+                
+                <div class="form-group">
+                    <label>发布状态</label>
+                    <select name="status" class="title-input" style="padding:12px;">
+                        <option value="0">私人（仅自己可见）</option>
+                        <option value="1">仅浏览（所有人可见）</option>
+                        <option value="2">完全开源（所有人可见+批注）</option>
+                    </select>
+                </div>
 
                 <div class="toolbar-new" role="toolbar" aria-label="格式工具栏">
                     <button type="button" class="tool-btn-new" tabindex="0" data-key="b" onclick="insertFormat('**', '**')" title="粗体 (Ctrl+B)">
@@ -109,7 +118,7 @@
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
-const allArticles = {{ all_articles|tojson }};
+const allArticles = {{ open_article|tojson }};
 const bodyInput = document.getElementById('articleBody');
 const suggestionsBox = document.getElementById('articleSuggestions');
 const previewPanel = document.getElementById('previewPanel');
