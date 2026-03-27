@@ -6,6 +6,20 @@ c = conn.cursor()
 
 print(f"正在加载数据库[{db_name}]!")
 
+# 聊天室
+c.execute('''CREATE TABLE IF NOT EXISTS chat_rooms (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL)''')
+
+# 聊天消息表
+c.execute('''CREATE TABLE IF NOT EXISTS chat_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    room_id INTEGER NOT NULL,
+    username TEXT NOT NULL,
+    content TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (room_id) REFERENCES chat_rooms (id))''')
 
 # 用户表
 c.execute('''CREATE TABLE IF NOT EXISTS users (

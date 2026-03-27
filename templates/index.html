@@ -143,6 +143,125 @@
             </div>
         </div>
 
+        <!-- Chat Rooms -->
+        <div class="widget">
+            <div class="widget-header">聊天室</div>
+            <div class="widget-body" style="padding:10px 14px;">
+                <div class="quick-links">
+                    <a href="/chat/1" class="quick-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        综合讨论
+                    </a>
+                </div>
+            </div>
+        </div>
+
     </div>
+</div>
+
+<!-- Chat Modal -->
+<div id="chatModal" style="display:none; position:fixed; inset:0; z-index:1000; background:var(--bg-page);">
+    <div style="background:var(--bg-card); width:95%; max-width:1200px; height:90%; margin:2% auto; border-radius:12px; display:flex; overflow:hidden; box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+        <!-- 左侧聊天室列表 -->
+        <div style="width:220px; border-right:1px solid var(--border); padding:16px; overflow-y:auto; background:var(--bg-secondary);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <h3 style="font-size:18px; margin:0;">聊天室</h3>
+                <button onclick="closeChat()" style="background:none; border:none; cursor:pointer; padding:4px;">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div id="chatRoomList"></div>
+        </div>
+        <!-- 右侧消息区 -->
+        <div style="flex:1; display:flex; flex-direction:column; padding:16px;">
+            <div style="padding-bottom:12px; border-bottom:1px solid var(--border); margin-bottom:12px;">
+                <h2 id="chatRoomTitle" style="font-size:20px; margin:0;">聊天室</h2>
+            </div>
+            <div id="chatMessages" style="flex:1; overflow-y:auto; background:var(--bg-secondary); border-radius:12px; padding:16px; margin-bottom:12px;"></div>
+            <form id="chatForm" onsubmit="sendChatMessage(event)">
+                <div style="display:flex; gap:8px;">
+                    <input type="text" id="chatInput" placeholder="输入消息..." style="flex:1; padding:12px; border:1px solid var(--border); border-radius:8px; font-size:14px;">
+                    <button type="submit" class="btn-submit" style="padding:12px 24px; font-size:14px;">发送</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+var currentChatRoom = 1;
+
+function openChat(roomId) {
+    currentChatRoom = roomId;
+    document.getElementById('chatModal').style.display = 'flex';
+    loadChatRooms();
+    loadChatMessages();
+}
+
+function closeChat() {
+    document.getElementById('chatModal').style.display = 'none';
+}
+
+function loadChatRooms() {
+    var roomNames = ['综合讨论', '技术交流', '闲置物品'];
+    var html = '';
+    for (var i = 1; i <= 3; i++) {
+        html += '<div onclick="switchChatRoom(' + i + ')" style="padding:10px; margin-bottom:6px; border-radius:6px; cursor:pointer; background:' + (currentChatRoom == i ? 'var(--accent-light)' : 'var(--bg-secondary)') + ';">' + roomNames[i-1] + '</div>';
+    }
+    document.getElementById('chatRoomList').innerHTML = html;
+    document.getElementById('chatRoomTitle').innerText = roomNames[currentChatRoom - 1];
+}
+
+function switchChatRoom(roomId) {
+    currentChatRoom = roomId;
+    loadChatRooms();
+    loadChatMessages();
+}
+
+function loadChatMessages() {
+    fetch('/chat/' + currentChatRoom)
+    .then(function(response) { return response.text(); })
+    .then(function(html) {
+        var parser = new DOMParser();
+        var doc = parser.parseFromString(html, 'text/html');
+        var msgDiv = doc.getElementById('messages');
+        if (msgDiv) {
+            var container = document.getElementById('chatMessages');
+            container.innerHTML = msgDiv.innerHTML;
+            container.scrollTop = container.scrollHeight;
+        }
+    }).catch(function(err) {
+        console.error('加载消息失败:', err);
+    });
+}
+
+function sendChatMessage(e) {
+    e.preventDefault();
+    var input = document.getElementById('chatInput');
+    var content = input.value.trim();
+    if (!content) return;
+    
+    var formData = new FormData();
+    formData.append('content', content);
+    formData.append('csrf_token', '{{ csrf_token() }}');
+    
+    fetch('/chat/' + currentChatRoom + '/send', {
+        method: 'POST',
+        body: formData
+    }).then(function() {
+        input.value = '';
+        loadChatMessages();
+    }).catch(function(err) {
+        console.error('发送失败:', err);
+    });
+}
+
+// 每1秒自动刷新消息
+setInterval(function() {
+    if (document.getElementById('chatModal').style.display !== 'none') {
+        loadChatMessages();
+    }
+}, 1000);
+</script>
 </div>
 {% endblock %}

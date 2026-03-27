@@ -2,7 +2,6 @@ import os,re,json
 import sqlite3
 import datetime
 import secrets
-
 from flask_login import LoginManager, UserMixin, login_user, login_required, current_user, logout_user
 from flask import render_template, request, redirect, flash, url_for, send_from_directory, abort, session, jsonify
 import flask
@@ -10,10 +9,13 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 
+
+
 load_dotenv()
 
 app = flask.Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY','RANDOM_KEY')
+
 
 # === CSRF 保护 ===
 @app.before_request
@@ -46,6 +48,18 @@ def allowed_file(filename):
 
 if not os.path.exists('uploads'):
     os.makedirs('uploads')
+
+def get_all_room():
+    conn = get_db_connection()
+    rooms = conn.execute("SELECT * FROM chat_rooms").fetchall()
+    conn.close()
+    return rooms
+
+def get_all_messages(room_id,limit = 100):
+    conn = get_db_connection()
+    messages = conn.execute("SELECT * FROM chat_messages WHERE room_id= ? ORDER BY created_at DESC LIMIT ?",(room_id,limit)).fetchall()
+    conn.close()
+    return messages
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
@@ -514,6 +528,25 @@ def admin():
     ann = conn.execute("SELECT * FROM announcement").fetchall()
     conn.close()
     return render_template('admin.html', announcements=ann)
+
+
+@app.route('/chat')
+def chat_rooms():
+    return redirect('/chat/1')
+@app.route('/chat/<int:room_id>')
+def chat_room(room_id):
+    rooms = get_all_room()
+    messages = get_all_messages(room_id)
+    room_name = rooms[room_id-1]['name'] if room_id <= len(rooms) else '聊天室'
+    return render_template('chat.html', room_name=room_name, messages=messages)
+@app.route('/chat/<int:room_id>/send', methods=['POST'])
+def send_message(room_id):
+    content = request.form.get('content').strip()
+    conn = get_db_connection()
+    conn.execute("INSERT INTO chat_messages (room_id,username,content) VALUES (?,?,?)",(room_id,current_user.username,content))
+    conn.commit()
+    conn.close()
+    return redirect(f'/chat/{room_id}/')
 
 @app.route('/')
 def index():
