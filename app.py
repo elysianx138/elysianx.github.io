@@ -328,6 +328,7 @@ def article_list():
     total = conn.execute("SELECT COUNT(*) as count FROM articles WHERE status >= 1").fetchone()['count']
 
     art = conn.execute("SELECT * FROM articles WHERE status >= 1 ORDER BY date DESC LIMIT ? OFFSET ? ",(per_page,offset)).fetchall()
+    
     conn.close()
     total_pages = (total + per_page - 1) // per_page
     return render_template('articles_list.html', articles=art, total_pages=total_pages, page=page, per_page=per_page , total = total)
@@ -419,7 +420,11 @@ def article_detail(article_id):
             abort(403)
     
     backlinks = conn.execute("SELECT id,title FROM articles WHERE reference LIKE ? ", (f'%{article_id}%',)).fetchall()
-    
+
+    reading = det['reading'] + 1
+    conn.execute("UPDATE articles SET reading = ? WHERE id = ?", (reading, article_id))
+    conn.commit()
+
     try:
         ref_count = len(json.loads(det['reference'])) if det['reference'] else 0
     except:
@@ -430,7 +435,7 @@ def article_detail(article_id):
     annotations = conn.execute("SELECT * FROM annotations WHERE article_id = ? ORDER BY created_at DESC", (article_id,)).fetchall()
 
     conn.close()
-    return render_template('article_detail.html', detail=det, backlinks=backlinks, ref_count=ref_count, backlink_count=backlink_count, annotations=annotations)
+    return render_template('article_detail.html', detail=det, backlinks=backlinks, ref_count=ref_count, backlink_count=backlink_count, annotations=annotations,reading = reading)
 
 @app.route("/api/annotation/add", methods=['POST'])
 @login_required

@@ -47,6 +47,7 @@
                         <div class="article-top">
                             <!--<span class="article-tag">{{ article.tag }}</span>-->
                             <span class="article-date">{{ article.date }}</span>
+                            <span class="article-reading" style="color:var(--text-muted); font-size:12px;">{{ article['reading'] or 0 }} 阅读</span>
                         </div>
                         <h3 class="article-title">{{ article.title }}</h3>
                         <div class="article-footer">
