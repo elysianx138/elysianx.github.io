@@ -567,8 +567,38 @@ a:hover { text-decoration: underline; }
 /* === Footer === */
 .footer {
     border-top: 1px solid var(--border);
-    padding: 28px 40px;
-    margin-top: 40px;
+    padding: 40px 40px 20px;
+    margin-top: 60px;
+    background: var(--bg-card);
+}
+.footer-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 30px;
+    text-align: left;
+}
+.footer-section h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 14px;
+    color: var(--text);
+}
+.footer-section p, .footer-section a {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.8;
+    display: block;
+}
+.footer-section a:hover {
+    color: var(--accent);
+}
+.footer-bottom {
+    max-width: 1200px;
+    margin: 30px auto 0;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
     text-align: center;
 }
 .footer-text { font-size: 13px; color: var(--text-muted); margin-bottom: 4px; }

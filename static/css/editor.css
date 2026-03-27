@@ -2,8 +2,8 @@
     display: flex;
     gap: 16px;
     margin-top: 20px;
-    height: calc(100vh - 140px);
-    min-height: 500px;
+    height: calc(100vh - 260px);
+    min-height: 400px;
 }
 
 .editor-main-new {

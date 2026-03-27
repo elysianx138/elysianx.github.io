@@ -42,6 +42,7 @@ c.execute('''CREATE TABLE IF NOT EXISTS articles (
     status INTEGER DEFAULT 0,
     license TEXT,
     reading INTEGER DEFAULT 0,
+    tag Text NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)''')
 

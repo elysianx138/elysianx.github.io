@@ -229,14 +229,15 @@ def add():
     if request.method == 'POST':
         cursor = conn.cursor()
         status = int(request.form.get('status', 0))
+        tag = request.form.get('tag', '') or ''
         title = request.form.get('title', '') or ''
         body = request.form.get('body', '') or ''
         author = current_user.username if current_user.username else ''
 
         cursor.execute(
-            "INSERT INTO articles (title, body, author, date, reference, status) VALUES (?, ?, ?, ?, '', ?)",
+            "INSERT INTO articles (title, body, author, date, reference, status,tag) VALUES (?, ?, ?, ?, '', ?,?)",
             (title, body, author,
-             datetime.datetime.now().strftime("%Y-%m-%d"), status)
+             datetime.datetime.now().strftime("%Y-%m-%d"), status,tag)
         )
 
         new_article_id = cursor.lastrowid
@@ -328,7 +329,6 @@ def article_list():
     total = conn.execute("SELECT COUNT(*) as count FROM articles WHERE status >= 1").fetchone()['count']
 
     art = conn.execute("SELECT * FROM articles WHERE status >= 1 ORDER BY date DESC LIMIT ? OFFSET ? ",(per_page,offset)).fetchall()
-    
     conn.close()
     total_pages = (total + per_page - 1) // per_page
     return render_template('articles_list.html', articles=art, total_pages=total_pages, page=page, per_page=per_page , total = total)
@@ -422,6 +422,7 @@ def article_detail(article_id):
     backlinks = conn.execute("SELECT id,title FROM articles WHERE reference LIKE ? ", (f'%{article_id}%',)).fetchall()
 
     reading = det['reading'] + 1
+    tag = det['tag']
     conn.execute("UPDATE articles SET reading = ? WHERE id = ?", (reading, article_id))
     conn.commit()
 
@@ -435,7 +436,7 @@ def article_detail(article_id):
     annotations = conn.execute("SELECT * FROM annotations WHERE article_id = ? ORDER BY created_at DESC", (article_id,)).fetchall()
 
     conn.close()
-    return render_template('article_detail.html', detail=det, backlinks=backlinks, ref_count=ref_count, backlink_count=backlink_count, annotations=annotations,reading = reading)
+    return render_template('article_detail.html', detail=det, backlinks=backlinks, ref_count=ref_count, backlink_count=backlink_count, annotations=annotations,reading = reading,tag = tag)
 
 @app.route("/api/annotation/add", methods=['POST'])
 @login_required

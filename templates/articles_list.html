@@ -21,6 +21,13 @@
                         <span class="article-reading" style="color:var(--text-muted); font-size:12px;">{{ article['reading'] or 0 }} 阅读</span>
                     </div>
                     <h3 class="article-title">{{ article.title }}</h3>
+                    {% if article.tag %}
+                    <div style="margin:8px 0;">
+                        {% for t in article.tag.split(',') %}
+                        <span style="display:inline-block; padding:2px 8px; margin-right:6px; font-size:11px; background:var(--accent-light); color:var(--accent); border-radius:10px;">{{ t.strip() }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
                     <div class="article-footer">
                         <span class="article-author">{{ article.author }}</span>
 

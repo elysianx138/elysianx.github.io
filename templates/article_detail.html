@@ -10,6 +10,13 @@
                     返回文章列表
                 </a>
                 <h1 class="detail-title">{{ detail.title }}</h1>
+                {% if detail.tag %}
+                <div style="margin-top:10px;">
+                    {% for t in detail.tag.split(',') %}
+                    <span style="display:inline-block; padding:2px 10px; margin-right:8px; font-size:12px; background:var(--accent-light); color:var(--accent); border-radius:12px;">{{ t.strip() }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
                 <div class="detail-meta">
                     <span>{{ detail.author }}</span>
                     <span>&middot;</span>
@@ -17,6 +24,7 @@
                     <span>&middot;</span>
                     <span>{{ reading }} 次阅读</span>
                 </div>
+
             </div>
             <div class="md-body detail-body" id="articleBody">{{ detail.body }}</div>
             
