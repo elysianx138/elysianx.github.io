@@ -92,7 +92,7 @@ This is a learning project. The code might not follow all best practices, but it
 - GitHub: https://github.com/elysianx138/personal_blog 
 
 ## Social media
-**if you want to talk more with me,welcome to add my Gmail adn social media❤**
+**if you want to talk more with me,welcome to add my Gmail and social media❤**
 Gmail: elysianx138@gmail.com
 Ins:https://instagram.com/elysianx138
 YouTube:https://youtube.com/elysianx
