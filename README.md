@@ -1,0 +1,84 @@
+# MyBlog
+
+A personal blog system built with Flask. This project is for learning purposes - I started with basic Flask and gradually added more features while organizing the code using Blueprints for better maintainability.
+
+## What's Inside
+
+- User registration and login
+- Write and publish articles
+- File upload and management
+- Real-time chat room
+- Admin dashboard
+- Article tagging and categories
+- Dark/light theme switching
+- Reading count tracking
+- Article annotations (for open articles)
+
+## Tech Stack
+
+- **Backend**: Flask, Python 3.10
+- **Database**: SQLite
+- **Frontend**: HTML, CSS, JavaScript
+- **Authentication**: Flask-Login
+
+## Project Structure
+
+```
+MyBlog/
+├── app.py                 # Main entry point
+├── extensions.py          # Flask extensions setup
+├── init_db.py            # Database initialization
+│
+├── routes/                # Blueprint modules
+│   ├── user.py          # Login, register, profile
+│   ├── articles.py      # Article CRUD
+│   ├── files.py         # File handling
+│   ├── chat.py          # Chat room
+│   ├── admin.py         # Admin dashboard
+│   ├── api.py           # API endpoints
+│   └── main.py          # Home page
+│
+├── models/               # Database models
+├── utils/                # Helper functions
+├── static/               # CSS, JS, images
+└── templates/           # HTML templates
+```
+
+## How to Run
+
+```bash
+# Clone the repo
+git clone https://github.com/elysianx138/personal_blog.git
+cd personal_blog
+
+# Create virtual environment
+python -m venv .venv
+source .venv/bin/activate  # Linux/Mac
+.venv\Scripts\activate     # Windows
+
+# Install dependencies
+pip install flask flask-login python-dotenv
+
+# Run
+python app.py
+```
+
+Visit `http://localhost:5000`
+
+## What I Learned
+
+Building this project helped me understand:
+- Flask Blueprints and project structure
+- Database operations with SQLite
+- User authentication
+- Basic frontend (HTML/CSS/JS)
+- Environment variable configuration
+- RESTful API concepts (still learning)
+
+## Notes
+
+This is a learning project. The code might not follow all best practices, but it works and shows my progression from basic Flask to more organized architecture.
+
+## Contact
+
+- GitHub: https://github.com/elysianx138/personal_blog
