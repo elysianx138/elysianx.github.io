@@ -5,7 +5,7 @@ import json
 from flask import Blueprint,request,flash,redirect,url_for,render_template,abort
 from flask_login import login_required, current_user
 
-from utils.database import get_db_connection
+from util.database import get_db_connection
 
 """
 ==================

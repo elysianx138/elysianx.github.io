@@ -4,7 +4,7 @@ from flask import Blueprint, url_for,render_template, request, redirect, flash
 from flask_login import login_user, login_required, logout_user, current_user
 
 from extensions import login_manager
-from utils.database import get_db_connection
+from util.database import get_db_connection
 from models.__init__ import User
 
 from werkzeug.security import check_password_hash, generate_password_hash

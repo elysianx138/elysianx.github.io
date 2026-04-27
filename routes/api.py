@@ -3,7 +3,7 @@ import datetime
 from flask import Blueprint,request,jsonify
 from flask_login import login_required, current_user
 
-from utils.database import get_db_connection
+from util.database import get_db_connection
 
 """
 ======================

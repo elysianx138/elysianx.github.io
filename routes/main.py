@@ -1,7 +1,7 @@
 from flask import Blueprint,render_template
 from flask_login import current_user
 from flask import jsonify
-from utils.database import get_db_connection
+from util.database import get_db_connection
 
 """
 ===============
