@@ -1,4 +1,4 @@
-from utils.database import get_db_connection
+from util.database import get_db_connection
 
 def get_all_room():
     conn = get_db_connection()

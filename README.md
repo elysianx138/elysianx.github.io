@@ -29,7 +29,7 @@ A personal blog system built with Flask. This project is for learning purposes -
 - **Frontend**: HTML, CSS, JavaScript
 - **Authentication**: Flask-Login
 
-## 📁Project Structure
+## 📂Project Structure
 
 ```
 MyBlog/
@@ -73,7 +73,12 @@ python app.py
 
 Visit `http://localhost:5000`
 
-## 📖What I Learned
+## 👀Preview
+![](<img/屏幕截图 2026-05-12 200909.png>)
+![alt text](<img/屏幕截图 2026-05-12 201026.png>)
+![alt text](<img/屏幕截图 2026-05-12 201102.png>)
+
+## ❓What I Learned
 
 Building this project helped me understand:
 - Flask Blueprints and project structure
@@ -83,16 +88,17 @@ Building this project helped me understand:
 - Environment variable configuration
 - RESTful API concepts (still learning)
 
-## 📒Notes
+## 📚Notes
 
 This is a learning project. The code might not follow all best practices, but it works and shows my progression from basic Flask to more organized architecture.
 
-## 📮Contact
+## 🗨Contact
 
 - GitHub: https://github.com/elysianx138/personal_blog 
 
-## 💬Social media
-**if you want to talk more with me,welcome to add my Gmail and social media❤**
+## 📫Social media
+**if you want to talk more with me,welcome to add my Gmail adn social media❤**
+
 Gmail: elysianx138@gmail.com
 
 Ins:https://instagram.com/elysianx138

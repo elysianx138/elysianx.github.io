@@ -5,8 +5,8 @@ from flask import Blueprint, send_from_directory, url_for, flash,request,redirec
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 
-from utils.database import get_db_connection
-from utils.files import allowed_file
+from util.database import get_db_connection
+from util.files import allowed_file
 
 """
 ===============

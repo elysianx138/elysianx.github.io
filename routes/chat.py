@@ -2,8 +2,8 @@
 from flask import Blueprint,redirect,render_template,request
 from flask_login import current_user
 
-from utils.about_chat_room import get_all_room, get_all_messages
-from utils.database import get_db_connection
+from util.about_chat_room import get_all_room, get_all_messages
+from util.database import get_db_connection
 
 chat_bp = Blueprint('chat', __name__)
 
