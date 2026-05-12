@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/Python-3.10+-blue?style=flat)](https://www.python.org/)
 [![language](https://img.shields.io/badge/language-English-green?style=flat)](#)
 
-> MyBlog
+> 🚀MyBlog
 > That's an excellent project to practice for green hands
 
 A personal blog system built with Flask. This project is for learning purposes - I started with basic Flask and gradually added more features while organizing the code using Blueprints for better maintainability.
@@ -52,7 +52,7 @@ MyBlog/
 └── templates/           # HTML templates
 ```
 
-## ⚙How to Run
+## ⚙️How to Run
 
 ```bash
 # Clone the repo
@@ -100,6 +100,12 @@ This is a learning project. The code might not follow all best practices, but it
 **if you want to talk more with me,welcome to add my Gmail adn social media❤**
 
 Gmail: elysianx138@gmail.com
+
 Ins:https://instagram.com/elysianx138
+
 YouTube:https://youtube.com/elysianx
+
 X:https://x.com/@johnchenmOwn
+
+## License
+- MIT License. See [MIT LICENSE]()
