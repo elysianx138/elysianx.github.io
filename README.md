@@ -78,6 +78,9 @@ Visit `http://localhost:5000`
 ![alt text](<img/屏幕截图 2026-05-12 201026.png>)
 ![alt text](<img/屏幕截图 2026-05-12 201102.png>)
 
+## 💻My Web
+You can also visit https://elysianxgithubio-production-8080.up.railway.app
+
 ## ❓What I Learned
 
 Building this project helped me understand:
