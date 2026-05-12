@@ -3,14 +3,14 @@
 [![Python](https://img.shields.io/badge/Python-3.10+-blue?style=flat)](https://www.python.org/)
 [![language](https://img.shields.io/badge/language-English-green?style=flat)](#)
 
-> MyBlog
+> 🚀MyBlog
 > That's an excellent project to practice for green hands
 
 A personal blog system built with Flask. This project is for learning purposes - I started with basic Flask and gradually added more features while organizing the code using Blueprints for better maintainability.
 
 **if you like the project,please star⭐**
 
-## What's Inside
+## 🤔What's Inside
 
 - User registration and login
 - Write and publish articles
@@ -22,14 +22,14 @@ A personal blog system built with Flask. This project is for learning purposes -
 - Reading count tracking
 - Article annotations (for open articles)
 
-## Tech Stack
+## 🔧Tech Stack
 
 - **Backend**: Flask, Python 3.10
 - **Database**: SQLite
 - **Frontend**: HTML, CSS, JavaScript
 - **Authentication**: Flask-Login
 
-## Project Structure
+## 📁Project Structure
 
 ```
 MyBlog/
@@ -52,7 +52,7 @@ MyBlog/
 └── templates/           # HTML templates
 ```
 
-## How to Run
+## ⚙️How to Run
 
 ```bash
 # Clone the repo
@@ -73,7 +73,7 @@ python app.py
 
 Visit `http://localhost:5000`
 
-## What I Learned
+## 📖What I Learned
 
 Building this project helped me understand:
 - Flask Blueprints and project structure
@@ -83,17 +83,23 @@ Building this project helped me understand:
 - Environment variable configuration
 - RESTful API concepts (still learning)
 
-## Notes
+## 📒Notes
 
 This is a learning project. The code might not follow all best practices, but it works and shows my progression from basic Flask to more organized architecture.
 
-## Contact
+## 📮Contact
 
 - GitHub: https://github.com/elysianx138/personal_blog 
 
-## Social media
+## 💬Social media
 **if you want to talk more with me,welcome to add my Gmail and social media❤**
 Gmail: elysianx138@gmail.com
+
 Ins:https://instagram.com/elysianx138
+
 YouTube:https://youtube.com/elysianx
+
 X:https://x.com/@johnchenmOwn
+
+## License
+- MIT License. See [MIT LICENSE]()
