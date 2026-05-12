@@ -56,7 +56,7 @@ MyBlog/
 
 ```bash
 # Clone the repo
-git clone https://github.com/elysianx138/personal_blog.git
+git clone https://github.com/elysianx138/elysianx.github.io.git
 cd personal_blog
 
 # Create virtual environment
