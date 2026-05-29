@@ -58,7 +58,7 @@ MyBlog/
 
 ```bash
 # Clone the repo
-git clone https://github.com/elysianx138/personal_blog.git
+git clone https://github.com/elysianx138/elysianx.github.io.git
 cd personal_blog
 
 # Create virtual environment
@@ -124,7 +124,7 @@ This is a learning project. The code might not follow all best practices, but it
 
 ## 🗨Contact
 
-- GitHub: https://github.com/elysianx138/personal_blog 
+- GitHub: https://github.com/elysianx138/elysianx.github.io.git
 
 ## 📫Social media
 **if you want to talk more with me,welcome to add my Gmail adn social media❤**
