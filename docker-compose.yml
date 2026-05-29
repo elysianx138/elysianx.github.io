@@ -1,0 +1,13 @@
+services: 
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    env_file: .env
+    volumes: 
+      - ./questions.db:/myblog/questions.db
+      - uploads:/myblog/uploads
+    restart: unless-stopped
+
+volumes:
+  uploads: 

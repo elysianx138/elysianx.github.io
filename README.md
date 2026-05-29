@@ -89,7 +89,7 @@ docker run -d -p 5000:5000 --name myblog-container myblog
 
 ⚠**Have some questions**
 - Build images failed
-```
+```Bash
 # Try to clear cache
 docker system prune -a
 docker build -t myblog .
@@ -99,6 +99,13 @@ docker build -t myblog .
 docker pull python:3.10-slim # Try to pull in Linux
 
 ```
+---
+**Try** ```docker-compose.yml```
+```Bash
+cd ./YOUR_PATH
+docker compose up -d
+```
+
 
 ## 👀Preview
 ![](<img/屏幕截图 2026-05-12 200909.png>)
