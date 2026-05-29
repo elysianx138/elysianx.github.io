@@ -10,7 +10,20 @@ A personal blog system built with Flask. This project is for learning purposes -
 
 **if you like the project,please star⭐**
 
-[TOC]
+[🤔What's Inside](#whats-inside)
+[🔧Tech Stack](#tech-stack)
+[📂Project Structure](#project-structure)
+[⚙️How to Run](#️how-to-run)
+[🐋Docker build](#docker-build)
+[👀Preview](#preview)
+[💻My Web](#my-web)
+[❓What I Learned](#what-i-learned)
+[📚Notes](#notes)
+[🗨Contact](#contact)
+[📫Social media](#social-media)
+[License](#license)
+
+
 
 ## 🤔What's Inside
 
