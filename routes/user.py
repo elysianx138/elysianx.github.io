@@ -143,6 +143,6 @@ def edit_profile():
         flash('用户名已存在', 'danger')
     finally:
         conn.close()
-    return redirect(url_for("profile", username=current_user.username))
+    return redirect(url_for('user.profile', username=current_user.username))
 
 # =================

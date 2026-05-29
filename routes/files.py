@@ -42,11 +42,11 @@ def uploads():
     if request.method == 'POST':
         if 'file' not in request.files:
             flash('没有文件', 'danger')
-            return redirect(url_for('files_list'))
+            return redirect(url_for('files.files_list'))
         file = request.files['file']
         if file.filename == '':
             flash('没有文件', 'danger')
-            return redirect(url_for('index'))
+            return redirect(url_for('main.index'))
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file.save(os.path.join('uploads', filename))
@@ -58,9 +58,9 @@ def uploads():
             conn.commit()
             conn.close()
             flash('文件上传成功', 'success')
-            return redirect(url_for('files_list'))
+            return redirect(url_for('files.files_list'))
         flash('文件类型不支持', 'danger')
-        return redirect(url_for('uploads'))
+        return redirect(url_for('files.uploads'))
     return render_template('uploads.html')
 # =============
 

@@ -51,7 +51,7 @@ def announcement_add():
     conn.commit()
     conn.close()
     flash('公告发布成功', 'success')
-    return redirect(url_for('admin'))
+    return redirect(url_for('admin_bp.admin'))
 # ===============
 
 # === 公告删除 ===
@@ -63,5 +63,5 @@ def announcement_delete():
     conn.commit()
     conn.close()
     flash('公告已删除', 'success')
-    return redirect(url_for('admin'))
+    return redirect(url_for('admin_bp.admin'))
 # ===============

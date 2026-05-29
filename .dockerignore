@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.idea/
+.vscode/
+
+# Virtual Environment
+.venv/
+venv/
+
+# Environment variables (secrets!)
+.env
+
+# Documentation
+README.md
+docs/
+img/
+LICENSE
+
+# Database (recreated at runtime via init_db.py)
+questions.db
+*.sqlite
+*.sqlite3
+
+# User uploads (should be mounted as volume)
+uploads/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker
+.dockerignore
+Dockerfile

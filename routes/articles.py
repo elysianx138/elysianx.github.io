@@ -68,7 +68,7 @@ def add():
         conn.commit()
         conn.close()
         flash('文章保存成功', 'success')
-        return redirect(url_for('my_articles'))
+        return redirect(url_for('articles_bp.my_articles'))
 
     # 可引用的文章：公开的 + 作者自己的（无论公开与否）
     open_article_list = [dict(row) for row in conn.execute(
@@ -136,13 +136,13 @@ def publish_article(article_id):
     if article['author'] != current_user.username:
         flash('无权限', 'danger')
         conn.close()
-        return redirect(url_for('article_detail', article_id=article_id))
+        return redirect(url_for('articles_bp.article_detail', article_id=article_id))
 
     conn.execute("UPDATE articles SET status = 1 WHERE id = ?", (article_id,))
     conn.commit()
     conn.close()
     flash('已发布为仅浏览', 'success')
-    return redirect(url_for('article_detail', article_id=article_id))
+    return redirect(url_for('articles_bp.article_detail', article_id=article_id))
 # ===========
 
 
@@ -155,8 +155,8 @@ def search_article():
         article = conn.execute("SELECT id FROM articles WHERE title = ?", (title,)).fetchone()
         conn.close()
         if article:
-            return redirect(url_for('article_detail', article_id=article['id']))
-    return redirect(url_for('article_list'))
+            return redirect(url_for('articles_bp.article_detail', article_id=article['id']))
+    return redirect(url_for('articles_bp.article_list'))
 # ==============
 
 
@@ -176,9 +176,9 @@ def edit_article(action,article_id):
                 conn.commit()
                 conn.close()
                 flash("删除成功", "success")
-                return redirect(url_for('article_list'))
+                return redirect(url_for('articles_bp.article_list'))
             flash("删除失败", "danger")
-            return redirect(url_for('article_list'))
+            return redirect(url_for('articles_bp.article_list'))
 
         if action == 'edit':
             if article['author'] == current_user.username:
@@ -186,9 +186,9 @@ def edit_article(action,article_id):
                 conn.commit()
                 conn.close()
                 flash("编辑成功", "success")
-                return redirect(url_for('article_list'))
+                return redirect(url_for('articles_bp.article_list'))
             flash("编辑失败", "danger")
-            return redirect(url_for('article_detail', article_id=article_id))
+            return redirect(url_for('articles_bp.article_detail', article_id=article_id))
     all_articles = [dict(row) for row in conn.execute("SELECT id, title FROM articles").fetchall()]
     return render_template('edit_article.html', article=article,all_articles=all_articles)
 # ===============
@@ -246,11 +246,11 @@ def open_article(article_id):
     if article['author'] != current_user.username:
         flash('无权限', 'danger')
         conn.close()
-        return redirect(url_for('article_detail', article_id=article_id))
+        return redirect(url_for('articles_bp.article_detail', article_id=article_id))
 
     conn.execute("UPDATE articles SET status = 2, license = ? WHERE id = ?", (license, article_id))
     conn.commit()
     conn.close()
     flash('已开源', 'success')
-    return redirect(url_for('article_detail', article_id=article_id))
+    return redirect(url_for('articles_bp.article_detail', article_id=article_id))
 # ============

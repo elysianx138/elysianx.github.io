@@ -10,6 +10,8 @@ A personal blog system built with Flask. This project is for learning purposes -
 
 **if you like the project,please star⭐**
 
+[TOC]
+
 ## 🤔What's Inside
 
 - User registration and login
@@ -72,6 +74,31 @@ python app.py
 ```
 
 Visit `http://localhost:5000`
+
+## 🐋Docker build
+1. Install [Docker](https://docs.docker.com/get-docker/)
+2. **Build Docker images**
+```
+docker build -t myblog . #Windows/Linux
+```
+3. **Run**
+```
+docker run -d -p 5000:5000 --name myblog-container myblog
+``` 
+4. [http://localhost:5000/](http://localhost:5000/)
+
+⚠**Have some questions**
+- Build images failed
+```
+# Try to clear cache
+docker system prune -a
+docker build -t myblog .
+---------------------------
+# Sometimes,network issues may cause the build of the Python:3.10-slim image to fail
+
+docker pull python:3.10-slim # Try to pull in Linux
+
+```
 
 ## 👀Preview
 ![](<img/屏幕截图 2026-05-12 200909.png>)
