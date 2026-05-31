@@ -1,0 +1,29 @@
+name: Docker CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    run-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Build Docker image
+      run: docker build -t docker_test:latest .
+      run: echo "🐧 The job was automatically triggered"
+
+    - name: Run tests inside container
+      run: docker run docker_test:latest sh -c "pip install pytest && python -m pytest tests/"
+      run: echo "✅ Tests passed successfully"
+
+    - name: Log in to Github Action Container Registry
+      run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      run: echo "🔒 Have logged in to Github Container Registry"
+
+    - name: Push image
+      run: docker tag docker_test:latest ghcr.io/${{ github.repository_owner }} && docker push ghcr.io/${{ github.repository_owner }}
+      run: echo "🚀 The image was pushed to Github Container Registry"
