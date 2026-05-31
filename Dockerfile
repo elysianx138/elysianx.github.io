@@ -8,10 +8,10 @@ RUN pip install --no-cache-dir --user -r requirements.txt
 FROM python:3.10-slim
 WORKDIR /myblog
 
-# 
+# non-root user setup
 COPY --from=builder /root/.local /usr/local
 ENV PATH=/usr/local/bin:$PATH
-RUN useradd appuser
+RUN useradd --create-home appuser
 COPY . .
 RUN chown -R appuser:appuser /myblog
 USER appuser
