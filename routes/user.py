@@ -76,11 +76,11 @@ def login():
 # === 用户注册 ===
 @user_bp.route('/register', methods=['GET', 'POST'])
 def register():
-    ADMIN_CODE = os.getenv('ADMIN_CODE',"RANDOM_KEY")
+    ADMIN_CODE = os.getenv('ADMIN_CODE')
     if request.method == 'POST':
         conn = get_db_connection()
         try:
-            if request.form.get('admin_code') == ADMIN_CODE:
+            if ADMIN_CODE and request.form.get('admin_code') == ADMIN_CODE:
                 role = 'admin'
             else:
                 role = 'visitor'

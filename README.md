@@ -36,6 +36,13 @@ A personal blog system built with Flask. This project is for learning purposes -
 - Dark/light theme switching
 - Reading count tracking
 - Article annotations (for open articles)
+- Full-text fuzzy search (title / body / tags)
+- Tag cloud & per-tag article filtering
+- Archive timeline grouped by year
+- RSS feed (`/feed.xml`) & sitemap (`/sitemap.xml`)
+- Reading progress bar & estimated reading time
+- Syntax highlighting for code blocks (theme-aware)
+- XSS-safe Markdown rendering (DOMPurify)
 
 ## 🔧Tech Stack
 
@@ -87,6 +94,15 @@ python app.py
 ```
 
 Visit `http://localhost:5000`
+
+### Environment variables
+
+Create a `.env` file in the project root:
+
+```ini
+SECRET_KEY=your-random-secret-key   # required in production (e.g. `python -c "import secrets;print(secrets.token_hex(32))"`)
+ADMIN_CODE=your-admin-invite-code   # optional; admin registration is DISABLED when unset
+```
 
 ## 🐋Docker build
 1. Install [Docker](https://docs.docker.com/get-docker/)

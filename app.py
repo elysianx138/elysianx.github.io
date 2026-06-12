@@ -7,12 +7,21 @@ from flask import request,abort, session
 
 from routes import *
 
+load_dotenv()
+
 app = flask.Flask(__name__)
-app.secret_key = os.getenv('SECRET_KEY','RANDOM_KEY')
+
+# === 密钥安全 ===
+# 优先读取环境变量;未配置时生成一次性随机密钥(重启后 session 失效),
+# 避免使用可被猜测的固定默认值导致 session 伪造。
+_secret = os.getenv('SECRET_KEY')
+if not _secret:
+    _secret = secrets.token_hex(32)
+    print("[WARN] 未设置 SECRET_KEY 环境变量,已生成临时随机密钥(重启后所有登录会话失效)。生产环境请在 .env 中配置 SECRET_KEY。")
+app.secret_key = _secret
+# ===============
 
 login_manager.init_app(app)
-
-load_dotenv()
 
 # === CSRF 保护 ===
 @app.before_request

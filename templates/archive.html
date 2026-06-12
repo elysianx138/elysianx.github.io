@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}归档 - MyBlog{% endblock %}
+{% block content %}
+<div class="main-wrapper">
+    <div>
+        <div class="page-header">
+            <h1>文章归档</h1>
+            <p>共 {{ total }} 篇,按时间倒序</p>
+        </div>
+
+        {% if groups %}
+        <div class="archive-timeline">
+            {% for year, articles in groups.items() %}
+            <div class="archive-year-block">
+                <div class="archive-year">{{ year }}<span class="archive-year-count">{{ articles|length }} 篇</span></div>
+                <ul class="archive-list">
+                    {% for a in articles %}
+                    <li class="archive-item" onclick="location.href='/article/{{ a.id }}'">
+                        <span class="archive-date">{{ a.date[5:] if a.date else '' }}</span>
+                        <span class="archive-title">{{ a.title }}</span>
+                        {% if a.tag %}
+                        <span class="archive-tags">
+                            {% for t in a.tag.split(',')[:2] %}<span class="archive-tag">{{ t.strip() }}</span>{% endfor %}
+                        </span>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p>暂无文章</p>
+            <a href="/add" style="color:var(--accent); font-size:13px;">写第一篇</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

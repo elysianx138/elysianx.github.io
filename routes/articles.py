@@ -149,6 +149,10 @@ def publish_article(article_id):
 # === 文章搜索 ===
 @articles_bp.route("/search")
 def search_article():
+    """两种模式:
+    - ?title=精确标题  双链 [[标题]] 跳转用,命中直达文章页
+    - ?q=关键词        模糊全文搜索,在标题/正文/标签中匹配,展示结果页
+    """
     title = request.args.get('title', '')
     if title:
         conn = get_db_connection()
@@ -156,7 +160,67 @@ def search_article():
         conn.close()
         if article:
             return redirect(url_for('articles_bp.article_detail', article_id=article['id']))
-    return redirect(url_for('articles_bp.article_list'))
+        return redirect(url_for('articles_bp.search_article', q=title))
+
+    q = request.args.get('q', '').strip()
+    results = []
+    if q:
+        like = f"%{q}%"
+        conn = get_db_connection()
+        results = conn.execute(
+            """SELECT id, title, author, date, tag, reading,
+                      substr(body, 1, 160) AS preview
+               FROM articles
+               WHERE status >= 1 AND (title LIKE ? OR body LIKE ? OR tag LIKE ?)
+               ORDER BY date DESC LIMIT 50""",
+            (like, like, like)
+        ).fetchall()
+        conn.close()
+    return render_template('search.html', q=q, results=results)
+# ==============
+
+
+# === 标签云 ===
+@articles_bp.route("/tags")
+def tags():
+    conn = get_db_connection()
+    rows = conn.execute("SELECT tag FROM articles WHERE status >= 1 AND tag != ''").fetchall()
+    conn.close()
+    counter = {}
+    for row in rows:
+        for t in row['tag'].split(','):
+            t = t.strip()
+            if t:
+                counter[t] = counter.get(t, 0) + 1
+    tag_list = sorted(counter.items(), key=lambda x: (-x[1], x[0]))
+    return render_template('tags.html', tags=tag_list)
+
+
+@articles_bp.route("/tag/<name>")
+def tag_articles(name):
+    conn = get_db_connection()
+    rows = conn.execute(
+        "SELECT * FROM articles WHERE status >= 1 AND (',' || REPLACE(tag, ' ', '') || ',') LIKE ? ORDER BY date DESC",
+        (f"%,{name.replace(' ', '')},%",)
+    ).fetchall()
+    conn.close()
+    return render_template('search.html', q=None, tag_name=name, results=rows)
+# ==============
+
+
+# === 文章归档 ===
+@articles_bp.route("/archive")
+def archive():
+    conn = get_db_connection()
+    rows = conn.execute(
+        "SELECT id, title, date, tag, reading FROM articles WHERE status >= 1 ORDER BY date DESC"
+    ).fetchall()
+    conn.close()
+    groups = {}   # {年份: [文章...]} 按时间倒序
+    for row in rows:
+        year = (row['date'] or '未知')[:4]
+        groups.setdefault(year, []).append(row)
+    return render_template('archive.html', groups=groups, total=len(rows))
 # ==============
 
 
@@ -227,8 +291,13 @@ def article_detail(article_id):
                                (article_id,)).fetchall()
 
     conn.close()
+
+    # 预计阅读时间:中文约 400 字/分钟
+    read_minutes = max(1, round(len(det['body'] or '') / 400))
+
     return render_template('article_detail.html', detail=det, backlinks=backlinks, ref_count=ref_count,
-                           backlink_count=backlink_count, annotations=annotations, reading=reading, tag=tag)
+                           backlink_count=backlink_count, annotations=annotations, reading=reading, tag=tag,
+                           read_minutes=read_minutes)
 # =============
 
 # === 完全公开文章 ===

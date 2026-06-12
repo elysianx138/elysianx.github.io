@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}{% if tag_name %}标签:{{ tag_name }}{% else %}搜索{% if q %}:{{ q }}{% endif %}{% endif %} - MyBlog{% endblock %}
+{% block content %}
+<div class="main-wrapper">
+    <div>
+        <div class="page-header">
+            {% if tag_name %}
+            <h1><span class="tag-hash">#</span>{{ tag_name }}</h1>
+            <p>共 {{ results|length }} 篇文章</p>
+            {% else %}
+            <h1>搜索文章</h1>
+            <form action="/search" method="get" class="search-page-form">
+                <input type="search" name="q" value="{{ q or '' }}" placeholder="输入关键词,搜索标题、正文或标签…" autofocus>
+                <button type="submit" class="btn-submit">搜索</button>
+            </form>
+            {% if q %}<p>「{{ q }}」 — 找到 {{ results|length }} 篇相关文章</p>{% endif %}
+            {% endif %}
+        </div>
+
+        {% if results %}
+        <div class="article-list">
+            {% for article in results %}
+            <div class="article-card" onclick="location.href='/article/{{ article.id }}'">
+                <div class="article-thumb">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </div>
+                <div class="article-body">
+                    <div class="article-top">
+                        <span class="article-date">{{ article.date }}</span>
+                        <span style="color:var(--text-muted); font-size:12px;">{{ article['reading'] or 0 }} 阅读</span>
+                    </div>
+                    <h3 class="article-title">{{ article.title }}</h3>
+                    {% if article.tag %}
+                    <div style="margin:8px 0;">
+                        {% for t in article.tag.split(',') %}
+                        <span style="display:inline-block; padding:2px 8px; margin-right:6px; font-size:11px; background:var(--accent-light); color:var(--accent); border-radius:10px;">{{ t.strip() }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    <div class="article-footer">
+                        <span class="article-author">{{ article.author }}</span>
+                        <span class="article-link">阅读全文</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% elif q or tag_name %}
+        <div class="empty-state">
+            <p>没有找到匹配的文章</p>
+            <a href="/articles_list" style="color:var(--accent); font-size:13px;">浏览全部文章</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

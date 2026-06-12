@@ -1,6 +1,11 @@
 {% extends 'base.html' %}
 {% block title %}{{ detail.title }} - MyBlog{% endblock %}
+{% block meta_description %}{{ detail.body[:120] }}{% endblock %}
+{% block og_title %}{{ detail.title }}{% endblock %}
+{% block og_description %}{{ detail.body[:120] }}{% endblock %}
+{% block og_type %}article{% endblock %}
 {% block content %}
+<div class="read-progress" id="readProgress"></div>
 <div class="main-wrapper">
     <div>
         <div class="card">
@@ -23,6 +28,8 @@
                     <span>{{ detail.date }}</span>
                     <span>&middot;</span>
                     <span>{{ reading }} 次阅读</span>
+                    <span>&middot;</span>
+                    <span>约 {{ read_minutes }} 分钟读完</span>
                 </div>
 
             </div>
@@ -153,6 +160,14 @@
 </div>
 
 <script>
+// 阅读进度条
+window.addEventListener('scroll', function() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop / max) * 100 : 0;
+    document.getElementById('readProgress').style.width = pct + '%';
+}, { passive: true });
+
 var selectedColor = '#ffeb3b';
 var csrfToken = '{{ csrf_token() }}';
 var selectedText = '';

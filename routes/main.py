@@ -59,3 +59,61 @@ def api_index():
 # def settings():
 #     return render_template('settings.html')
 # ==============
+
+# === RSS 订阅 ===
+@main_bp.route('/feed.xml')
+def rss_feed():
+    from flask import Response, request as req
+    from xml.sax.saxutils import escape
+    conn = get_db_connection()
+    articles = conn.execute(
+        "SELECT id, title, body, author, date, tag FROM articles WHERE status >= 1 ORDER BY date DESC LIMIT 20"
+    ).fetchall()
+    conn.close()
+
+    base = req.url_root.rstrip('/')
+    items = []
+    for a in articles:
+        link = f"{base}/article/{a['id']}"
+        desc = escape((a['body'] or '')[:200])
+        items.append(
+            f"<item><title>{escape(a['title'])}</title>"
+            f"<link>{link}</link><guid>{link}</guid>"
+            f"<author>{escape(a['author'])}</author>"
+            f"<pubDate>{escape(a['date'])}</pubDate>"
+            f"<description>{desc}</description></item>"
+        )
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<rss version="2.0"><channel>'
+        f'<title>MyBlog</title><link>{base}</link>'
+        '<description>记录思想,分享见解</description>'
+        f'{"".join(items)}'
+        '</channel></rss>'
+    )
+    return Response(xml, mimetype='application/rss+xml')
+# ===============
+
+
+# === Sitemap ===
+@main_bp.route('/sitemap.xml')
+def sitemap():
+    from flask import Response, request as req
+    conn = get_db_connection()
+    articles = conn.execute(
+        "SELECT id, date FROM articles WHERE status >= 1 ORDER BY date DESC"
+    ).fetchall()
+    conn.close()
+
+    base = req.url_root.rstrip('/')
+    urls = [f"<url><loc>{base}/</loc></url>",
+            f"<url><loc>{base}/articles_list</loc></url>",
+            f"<url><loc>{base}/archive</loc></url>",
+            f"<url><loc>{base}/tags</loc></url>"]
+    for a in articles:
+        urls.append(f"<url><loc>{base}/article/{a['id']}</loc><lastmod>{a['date']}</lastmod></url>")
+    xml = ('<?xml version="1.0" encoding="UTF-8"?>'
+           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+           f'{"".join(urls)}</urlset>')
+    return Response(xml, mimetype='application/xml')
+# ===============

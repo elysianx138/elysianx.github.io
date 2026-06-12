@@ -1,0 +1,768 @@
+From 116d97cc130fef8b27112784b1439aa377e5fe71 Mon Sep 17 00:00:00 2001
+From: elysianx <dev@local>
+Date: Fri, 12 Jun 2026 04:48:39 +0000
+Subject: [PATCH 1/4] =?UTF-8?q?fix(security):=20=E4=BF=AE=E5=A4=8D=20SECRE?=
+ =?UTF-8?q?T=5FKEY/ADMIN=5FCODE=20=E5=8D=B1=E9=99=A9=E9=BB=98=E8=AE=A4?=
+ =?UTF-8?q?=E5=80=BC,Markdown=20=E6=B8=B2=E6=9F=93=E5=A2=9E=E5=8A=A0=20DOM?=
+ =?UTF-8?q?Purify=20=E9=98=B2=20XSS?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- SECRET_KEY 未配置时改为生成随机临时密钥并警告,杜绝固定默认值导致的 session 伪造
+- ADMIN_CODE 未配置时彻底关闭管理员注册通道,防止默认码被猜中提权
+- 所有 Markdown 渲染产物经 DOMPurify 消毒后再注入 DOM,防御存储型 XSS
+- load_dotenv() 提前到读取环境变量之前,修复 .env 不生效的问题
+---
+ app.py              | 15 +++++++++++---
+ routes/user.py      |  6 ++++--
+ templates/base.html | 48 ++++++++++++++++++++++++++++++++++++++++-----
+ 3 files changed, 59 insertions(+), 10 deletions(-)
+
+diff --git a/app.py b/app.py
+index adf3e0f..0695692 100644
+--- a/app.py
++++ b/app.py
+@@ -7,12 +7,21 @@ from flask import request,abort, session
+ 
+ from routes import *
+ 
++load_dotenv()
++
+ app = flask.Flask(__name__)
+-app.secret_key = os.getenv('SECRET_KEY','RANDOM_KEY')
+ 
+-login_manager.init_app(app)
++# === 密钥安全 ===
++# 优先读取环境变量;未配置时生成一次性随机密钥(重启后 session 失效),
++# 避免使用可被猜测的固定默认值导致 session 伪造。
++_secret = os.getenv('SECRET_KEY')
++if not _secret:
++    _secret = secrets.token_hex(32)
++    print("[WARN] 未设置 SECRET_KEY 环境变量,已生成临时随机密钥(重启后所有登录会话失效)。生产环境请在 .env 中配置 SECRET_KEY。")
++app.secret_key = _secret
++# ===============
+ 
+-load_dotenv()
++login_manager.init_app(app)
+ 
+ # === CSRF 保护 ===
+ @app.before_request
+diff --git a/routes/user.py b/routes/user.py
+index fef6bdb..fab298e 100644
+--- a/routes/user.py
++++ b/routes/user.py
+@@ -76,11 +76,13 @@ def login():
+ # === 用户注册 ===
+ @user_bp.route('/register', methods=['GET', 'POST'])
+ def register():
+-    ADMIN_CODE = os.getenv('ADMIN_CODE',"RANDOM_KEY")
++    # 未配置 ADMIN_CODE 环境变量时,彻底关闭管理员注册通道,
++    # 防止默认值被猜中后任意注册管理员账号。
++    ADMIN_CODE = os.getenv('ADMIN_CODE')
+     if request.method == 'POST':
+         conn = get_db_connection()
+         try:
+-            if request.form.get('admin_code') == ADMIN_CODE:
++            if ADMIN_CODE and request.form.get('admin_code') == ADMIN_CODE:
+                 role = 'admin'
+             else:
+                 role = 'visitor'
+diff --git a/templates/base.html b/templates/base.html
+index 8261143..603591d 100644
+--- a/templates/base.html
++++ b/templates/base.html
+@@ -7,9 +7,19 @@
+     <link rel="preconnect" href="https://fonts.googleapis.com">
+     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
++    <meta name="description" content="{% block meta_description %}MyBlog — 记录思想,分享见解{% endblock %}">
++    <meta property="og:title" content="{% block og_title %}MyBlog{% endblock %}">
++    <meta property="og:description" content="{% block og_description %}记录思想,分享见解{% endblock %}">
++    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
++    <link rel="alternate" type="application/rss+xml" title="MyBlog RSS" href="/feed.xml">
+     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
++    <link rel="stylesheet" href="{{ url_for('static', filename='css/enhance.css') }}">
++    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/atom-one-light.min.css" id="hl-light">
++    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/atom-one-dark.min.css" id="hl-dark" disabled>
+     {% block extra_css %}{% endblock %}
+     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
++    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
++    <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+ </head>
+ <body>
+     <nav class="navbar">
+@@ -27,6 +37,14 @@
+                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                     <span>文章</span>
+                 </a>
++                <a href="/archive" class="nav-link">
++                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
++                    <span>归档</span>
++                </a>
++                <a href="/tags" class="nav-link">
++                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
++                    <span>标签</span>
++                </a>
+                 <a href="/files_list" class="nav-link">
+                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                     <span>文件</span>
+@@ -61,6 +79,10 @@
+                 {% endif %}
+             </div>
+             <div class="nav-user">
++                <form action="/search" method="get" class="nav-search">
++                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
++                    <input type="search" name="q" placeholder="搜索文章…" aria-label="搜索文章">
++                </form>
+                 <button onclick="toggleTheme()" class="nav-link" style="border:none;background:none;cursor:pointer;">
+                     <svg id="themeIcon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                     <span id="themeText">主题</span>
+@@ -137,6 +159,12 @@
+ 
+     {% block scripts %}{% endblock %}
+     <script>
++function syncHlTheme() {
++    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
++    document.getElementById('hl-light').disabled = dark;
++    document.getElementById('hl-dark').disabled = !dark;
++}
++
+ function toggleTheme() {
+     var html = document.documentElement;
+     var icon = document.getElementById('themeIcon');
+@@ -152,6 +180,7 @@ function toggleTheme() {
+         icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+         text.textContent = '亮色';
+     }
++    syncHlTheme();
+ }
+ 
+ (function() {
+@@ -163,22 +192,31 @@ function toggleTheme() {
+         icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+         text.textContent = '亮色';
+     }
++    syncHlTheme();
+ })();
+ 
+ document.querySelectorAll('.md-body').forEach(function(el) {
+-    el.innerHTML = marked.parse(el.innerHTML);
+-    
+-    // 把 [[标题]] 转成链接
+-    el.innerHTML = el.innerHTML.replace(/\[\[(.+?)\]\]/g, function(match, title) {
++    var html = marked.parse(el.innerHTML);
++
++    // 把 [[标题]] 转成站内链接
++    html = html.replace(/\[\[(.+?)\]\]/g, function(match, title) {
+         return '<a href="/search?title=' + encodeURIComponent(title) + '" class="article-link">' + title + '</a>';
+     });
+-    
++
++    // 防 XSS:对 Markdown 渲染产物统一消毒后再注入 DOM
++    el.innerHTML = DOMPurify.sanitize(html);
++
+     el.querySelectorAll('a[href]').forEach(function(a) {
+         if (a.hostname && a.hostname !== window.location.hostname) {
+             a.target = '_blank';
+             a.rel = 'noopener noreferrer';
+         }
+     });
++
++    // 代码高亮
++    el.querySelectorAll('pre code').forEach(function(block) {
++        hljs.highlightElement(block);
++    });
+ });
+ </script>
+ </body>
+-- 
+2.43.0
+
+
+From 865c3f42a96a9c0e0ea73636b6db56234711bb01 Mon Sep 17 00:00:00 2001
+From: elysianx <dev@local>
+Date: Fri, 12 Jun 2026 04:50:27 +0000
+Subject: [PATCH 2/4] =?UTF-8?q?feat:=20=E6=96=B0=E5=A2=9E=E6=A8=A1?=
+ =?UTF-8?q?=E7=B3=8A=E5=85=A8=E6=96=87=E6=90=9C=E7=B4=A2=E3=80=81=E6=A0=87?=
+ =?UTF-8?q?=E7=AD=BE=E4=BA=91=E3=80=81=E5=BD=92=E6=A1=A3=E6=97=B6=E9=97=B4?=
+ =?UTF-8?q?=E8=BD=B4=E3=80=81RSS=20=E8=AE=A2=E9=98=85=E4=B8=8E=20sitemap?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- /search?q= 在标题/正文/标签中模糊匹配并展示结果页(保留 ?title= 双链直达,未命中降级为模糊搜索)
+- /tags 标签云(按文章数加权字号)、/tag/<name> 按标签筛选
+- /archive 按年份分组的时间轴归档页
+- /feed.xml RSS 2.0 订阅源、/sitemap.xml 站点地图(利于 SEO 收录)
+- 导航栏新增搜索框与归档/标签入口
+---
+ routes/articles.py     |  66 ++++++++++++++++++++++-
+ routes/main.py         |  61 ++++++++++++++++++++-
+ static/css/enhance.css | 117 +++++++++++++++++++++++++++++++++++++++++
+ templates/archive.html |  40 ++++++++++++++
+ templates/search.html  |  56 ++++++++++++++++++++
+ templates/tags.html    |  27 ++++++++++
+ 6 files changed, 365 insertions(+), 2 deletions(-)
+ create mode 100644 static/css/enhance.css
+ create mode 100644 templates/archive.html
+ create mode 100644 templates/search.html
+ create mode 100644 templates/tags.html
+
+diff --git a/routes/articles.py b/routes/articles.py
+index 5b91db3..1eef491 100644
+--- a/routes/articles.py
++++ b/routes/articles.py
+@@ -149,6 +149,10 @@ def publish_article(article_id):
+ # === 文章搜索 ===
+ @articles_bp.route("/search")
+ def search_article():
++    """两种模式:
++    - ?title=精确标题  双链 [[标题]] 跳转用,命中直达文章页
++    - ?q=关键词        模糊全文搜索,在标题/正文/标签中匹配,展示结果页
++    """
+     title = request.args.get('title', '')
+     if title:
+         conn = get_db_connection()
+@@ -156,7 +160,67 @@ def search_article():
+         conn.close()
+         if article:
+             return redirect(url_for('articles_bp.article_detail', article_id=article['id']))
+-    return redirect(url_for('articles_bp.article_list'))
++        return redirect(url_for('articles_bp.search_article', q=title))
++
++    q = request.args.get('q', '').strip()
++    results = []
++    if q:
++        like = f"%{q}%"
++        conn = get_db_connection()
++        results = conn.execute(
++            """SELECT id, title, author, date, tag, reading,
++                      substr(body, 1, 160) AS preview
++               FROM articles
++               WHERE status >= 1 AND (title LIKE ? OR body LIKE ? OR tag LIKE ?)
++               ORDER BY date DESC LIMIT 50""",
++            (like, like, like)
++        ).fetchall()
++        conn.close()
++    return render_template('search.html', q=q, results=results)
++# ==============
++
++
++# === 标签云 ===
++@articles_bp.route("/tags")
++def tags():
++    conn = get_db_connection()
++    rows = conn.execute("SELECT tag FROM articles WHERE status >= 1 AND tag != ''").fetchall()
++    conn.close()
++    counter = {}
++    for row in rows:
++        for t in row['tag'].split(','):
++            t = t.strip()
++            if t:
++                counter[t] = counter.get(t, 0) + 1
++    tag_list = sorted(counter.items(), key=lambda x: (-x[1], x[0]))
++    return render_template('tags.html', tags=tag_list)
++
++
++@articles_bp.route("/tag/<name>")
++def tag_articles(name):
++    conn = get_db_connection()
++    rows = conn.execute(
++        "SELECT * FROM articles WHERE status >= 1 AND (',' || REPLACE(tag, ' ', '') || ',') LIKE ? ORDER BY date DESC",
++        (f"%,{name.replace(' ', '')},%",)
++    ).fetchall()
++    conn.close()
++    return render_template('search.html', q=None, tag_name=name, results=rows)
++# ==============
++
++
++# === 文章归档 ===
++@articles_bp.route("/archive")
++def archive():
++    conn = get_db_connection()
++    rows = conn.execute(
++        "SELECT id, title, date, tag, reading FROM articles WHERE status >= 1 ORDER BY date DESC"
++    ).fetchall()
++    conn.close()
++    groups = {}   # {年份: [文章...]} 按时间倒序
++    for row in rows:
++        year = (row['date'] or '未知')[:4]
++        groups.setdefault(year, []).append(row)
++    return render_template('archive.html', groups=groups, total=len(rows))
+ # ==============
+ 
+ 
+diff --git a/routes/main.py b/routes/main.py
+index 707065b..14f2841 100644
+--- a/routes/main.py
++++ b/routes/main.py
+@@ -58,4 +58,63 @@ def api_index():
+ # @main_bp.route("/settings", methods=['GET'])
+ # def settings():
+ #     return render_template('settings.html')
+-# ==============
+\ No newline at end of file
++# ==============
++
++# === RSS 订阅 ===
++@main_bp.route('/feed.xml')
++def rss_feed():
++    from flask import Response, request as req
++    from xml.sax.saxutils import escape
++    conn = get_db_connection()
++    articles = conn.execute(
++        "SELECT id, title, body, author, date, tag FROM articles WHERE status >= 1 ORDER BY date DESC LIMIT 20"
++    ).fetchall()
++    conn.close()
++
++    base = req.url_root.rstrip('/')
++    items = []
++    for a in articles:
++        link = f"{base}/article/{a['id']}"
++        desc = escape((a['body'] or '')[:200])
++        items.append(
++            f"<item><title>{escape(a['title'])}</title>"
++            f"<link>{link}</link><guid>{link}</guid>"
++            f"<author>{escape(a['author'])}</author>"
++            f"<pubDate>{escape(a['date'])}</pubDate>"
++            f"<description>{desc}</description></item>"
++        )
++    xml = (
++        '<?xml version="1.0" encoding="UTF-8"?>'
++        '<rss version="2.0"><channel>'
++        f'<title>MyBlog</title><link>{base}</link>'
++        '<description>记录思想,分享见解</description>'
++        f'{"".join(items)}'
++        '</channel></rss>'
++    )
++    return Response(xml, mimetype='application/rss+xml')
++# ===============
++
++
++# === Sitemap ===
++@main_bp.route('/sitemap.xml')
++def sitemap():
++    from flask import Response, request as req
++    conn = get_db_connection()
++    articles = conn.execute(
++        "SELECT id, date FROM articles WHERE status >= 1 ORDER BY date DESC"
++    ).fetchall()
++    conn.close()
++
++    base = req.url_root.rstrip('/')
++    urls = [f"<url><loc>{base}/</loc></url>",
++            f"<url><loc>{base}/articles_list</loc></url>",
++            f"<url><loc>{base}/archive</loc></url>",
++            f"<url><loc>{base}/tags</loc></url>"]
++    for a in articles:
++        urls.append(f"<url><loc>{base}/article/{a['id']}</loc><lastmod>{a['date']}</lastmod></url>")
++    xml = ('<?xml version="1.0" encoding="UTF-8"?>'
++           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
++           f'{"".join(urls)}</urlset>')
++    return Response(xml, mimetype='application/xml')
++# ===============
++
+diff --git a/static/css/enhance.css b/static/css/enhance.css
+new file mode 100644
+index 0000000..8175004
+--- /dev/null
++++ b/static/css/enhance.css
+@@ -0,0 +1,117 @@
++/* MyBlog — 功能增强样式(搜索 / 归档 / 标签 / 阅读体验) */
++
++/* === 导航搜索框 === */
++.nav-search {
++    display: flex; align-items: center; gap: 6px;
++    background: var(--bg-secondary);
++    border: 1px solid var(--border);
++    border-radius: 18px;
++    padding: 4px 12px;
++    color: var(--text-muted);
++    transition: border-color .2s;
++}
++.nav-search:focus-within { border-color: var(--accent-border); }
++.nav-search input {
++    border: none; background: transparent; outline: none;
++    color: var(--text); font-size: 13px; width: 110px;
++    transition: width .25s ease;
++}
++.nav-search input:focus { width: 160px; }
++@media (max-width: 768px) { .nav-search { display: none; } }
++
++/* === 搜索结果页表单 === */
++.search-page-form {
++    display: flex; gap: 10px; margin: 14px 0 6px;
++    max-width: 520px;
++}
++.search-page-form input {
++    flex: 1; padding: 10px 16px;
++    border: 1px solid var(--border); border-radius: var(--radius);
++    background: var(--bg-card); color: var(--text);
++    font-size: 14px; outline: none;
++}
++.search-page-form input:focus { border-color: var(--accent-border); }
++
++/* === 归档时间轴 === */
++.archive-timeline { position: relative; }
++.archive-year-block { margin-bottom: 32px; }
++.archive-year {
++    font-family: 'Noto Serif SC', Georgia, serif;
++    font-size: 28px; font-weight: 700; color: var(--text);
++    display: flex; align-items: baseline; gap: 12px;
++    margin-bottom: 6px;
++}
++.archive-year-count { font-size: 13px; font-weight: 400; color: var(--text-muted); font-family: 'Noto Sans SC', sans-serif; }
++.archive-list {
++    list-style: none;
++    border-left: 2px solid var(--border);
++    margin-left: 6px; padding-left: 0;
++}
++.archive-item {
++    display: flex; align-items: baseline; gap: 14px;
++    padding: 9px 0 9px 22px;
++    position: relative; cursor: pointer;
++}
++.archive-item::before {
++    content: ''; position: absolute; left: -5px; top: 17px;
++    width: 8px; height: 8px; border-radius: 50%;
++    background: var(--border); transition: background .2s, transform .2s;
++}
++.archive-item:hover::before { background: var(--accent); transform: scale(1.3); }
++.archive-date { font-size: 13px; color: var(--text-muted); font-variant-numeric: tabular-nums; flex-shrink: 0; }
++.archive-title { font-size: 15px; color: var(--text); }
++.archive-item:hover .archive-title { color: var(--accent); }
++.archive-tags { margin-left: auto; flex-shrink: 0; }
++.archive-tag {
++    font-size: 11px; color: var(--accent);
++    background: var(--accent-light);
++    padding: 1px 8px; border-radius: 10px; margin-left: 6px;
++}
++@media (max-width: 600px) { .archive-tags { display: none; } }
++
++/* === 标签云 === */
++.tag-cloud {
++    display: flex; flex-wrap: wrap; align-items: baseline;
++    gap: 14px 22px; padding: 28px;
++    line-height: 1.4;
++}
++.tag-cloud-item {
++    color: var(--text-secondary);
++    font-family: 'Noto Serif SC', Georgia, serif;
++    transition: color .2s;
++    text-decoration: none;
++}
++.tag-cloud-item:hover { color: var(--accent); text-decoration: none; }
++.tag-cloud-item sup { font-size: 11px; color: var(--text-muted); margin-left: 2px; }
++.tag-hash { color: var(--accent); margin-right: 4px; }
++
++/* === 阅读进度条 === */
++.read-progress {
++    position: fixed; top: 0; left: 0; height: 3px; width: 0;
++    background: var(--accent); z-index: 200;
++    transition: width .1s linear;
++}
++
++/* === 文章代码块优化 === */
++.md-body pre {
++    border-radius: var(--radius);
++    border: 1px solid var(--border);
++    overflow-x: auto;
++    margin: 16px 0;
++}
++.md-body pre code { display: block; padding: 16px; font-size: 13.5px; line-height: 1.7; }
++.md-body code:not(pre code) {
++    background: var(--accent-light); color: var(--accent);
++    padding: 2px 6px; border-radius: 4px; font-size: 0.9em;
++}
++.md-body blockquote {
++    border-left: 3px solid var(--accent);
++    background: var(--bg-secondary);
++    padding: 10px 18px; margin: 14px 0;
++    color: var(--text-secondary);
++    border-radius: 0 var(--radius) var(--radius) 0;
++}
++.md-body img { max-width: 100%; border-radius: var(--radius); }
++.md-body table { border-collapse: collapse; width: 100%; margin: 14px 0; }
++.md-body th, .md-body td { border: 1px solid var(--border); padding: 8px 12px; font-size: 14px; }
++.md-body th { background: var(--bg-secondary); }
+diff --git a/templates/archive.html b/templates/archive.html
+new file mode 100644
+index 0000000..1ee5bd0
+--- /dev/null
++++ b/templates/archive.html
+@@ -0,0 +1,40 @@
++{% extends 'base.html' %}
++{% block title %}归档 - MyBlog{% endblock %}
++{% block content %}
++<div class="main-wrapper">
++    <div>
++        <div class="page-header">
++            <h1>文章归档</h1>
++            <p>共 {{ total }} 篇,按时间倒序</p>
++        </div>
++
++        {% if groups %}
++        <div class="archive-timeline">
++            {% for year, articles in groups.items() %}
++            <div class="archive-year-block">
++                <div class="archive-year">{{ year }}<span class="archive-year-count">{{ articles|length }} 篇</span></div>
++                <ul class="archive-list">
++                    {% for a in articles %}
++                    <li class="archive-item" onclick="location.href='/article/{{ a.id }}'">
++                        <span class="archive-date">{{ a.date[5:] if a.date else '' }}</span>
++                        <span class="archive-title">{{ a.title }}</span>
++                        {% if a.tag %}
++                        <span class="archive-tags">
++                            {% for t in a.tag.split(',')[:2] %}<span class="archive-tag">{{ t.strip() }}</span>{% endfor %}
++                        </span>
++                        {% endif %}
++                    </li>
++                    {% endfor %}
++                </ul>
++            </div>
++            {% endfor %}
++        </div>
++        {% else %}
++        <div class="empty-state">
++            <p>暂无文章</p>
++            <a href="/add" style="color:var(--accent); font-size:13px;">写第一篇</a>
++        </div>
++        {% endif %}
++    </div>
++</div>
++{% endblock %}
+diff --git a/templates/search.html b/templates/search.html
+new file mode 100644
+index 0000000..815a558
+--- /dev/null
++++ b/templates/search.html
+@@ -0,0 +1,56 @@
++{% extends 'base.html' %}
++{% block title %}{% if tag_name %}标签:{{ tag_name }}{% else %}搜索{% if q %}:{{ q }}{% endif %}{% endif %} - MyBlog{% endblock %}
++{% block content %}
++<div class="main-wrapper">
++    <div>
++        <div class="page-header">
++            {% if tag_name %}
++            <h1><span class="tag-hash">#</span>{{ tag_name }}</h1>
++            <p>共 {{ results|length }} 篇文章</p>
++            {% else %}
++            <h1>搜索文章</h1>
++            <form action="/search" method="get" class="search-page-form">
++                <input type="search" name="q" value="{{ q or '' }}" placeholder="输入关键词,搜索标题、正文或标签…" autofocus>
++                <button type="submit" class="btn-submit">搜索</button>
++            </form>
++            {% if q %}<p>「{{ q }}」 — 找到 {{ results|length }} 篇相关文章</p>{% endif %}
++            {% endif %}
++        </div>
++
++        {% if results %}
++        <div class="article-list">
++            {% for article in results %}
++            <div class="article-card" onclick="location.href='/article/{{ article.id }}'">
++                <div class="article-thumb">
++                    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
++                </div>
++                <div class="article-body">
++                    <div class="article-top">
++                        <span class="article-date">{{ article.date }}</span>
++                        <span style="color:var(--text-muted); font-size:12px;">{{ article['reading'] or 0 }} 阅读</span>
++                    </div>
++                    <h3 class="article-title">{{ article.title }}</h3>
++                    {% if article.tag %}
++                    <div style="margin:8px 0;">
++                        {% for t in article.tag.split(',') %}
++                        <span style="display:inline-block; padding:2px 8px; margin-right:6px; font-size:11px; background:var(--accent-light); color:var(--accent); border-radius:10px;">{{ t.strip() }}</span>
++                        {% endfor %}
++                    </div>
++                    {% endif %}
++                    <div class="article-footer">
++                        <span class="article-author">{{ article.author }}</span>
++                        <span class="article-link">阅读全文</span>
++                    </div>
++                </div>
++            </div>
++            {% endfor %}
++        </div>
++        {% elif q or tag_name %}
++        <div class="empty-state">
++            <p>没有找到匹配的文章</p>
++            <a href="/articles_list" style="color:var(--accent); font-size:13px;">浏览全部文章</a>
++        </div>
++        {% endif %}
++    </div>
++</div>
++{% endblock %}
+diff --git a/templates/tags.html b/templates/tags.html
+new file mode 100644
+index 0000000..cecd98e
+--- /dev/null
++++ b/templates/tags.html
+@@ -0,0 +1,27 @@
++{% extends 'base.html' %}
++{% block title %}标签 - MyBlog{% endblock %}
++{% block content %}
++<div class="main-wrapper">
++    <div>
++        <div class="page-header">
++            <h1>标签</h1>
++            <p>共 {{ tags|length }} 个标签</p>
++        </div>
++
++        {% if tags %}
++        <div class="card tag-cloud">
++            {% for name, count in tags %}
++            <a href="/tag/{{ name }}" class="tag-cloud-item" style="font-size: {{ [13 + count * 2, 26]|min }}px;">
++                {{ name }}<sup>{{ count }}</sup>
++            </a>
++            {% endfor %}
++        </div>
++        {% else %}
++        <div class="empty-state">
++            <p>还没有任何标签</p>
++            <a href="/add" style="color:var(--accent); font-size:13px;">写篇带标签的文章</a>
++        </div>
++        {% endif %}
++    </div>
++</div>
++{% endblock %}
+-- 
+2.43.0
+
+
+From 009aa6efa6e51f46b50acf06bb5d672f5f86a14e Mon Sep 17 00:00:00 2001
+From: elysianx <dev@local>
+Date: Fri, 12 Jun 2026 04:52:46 +0000
+Subject: [PATCH 3/4] =?UTF-8?q?feat(ux):=20=E9=98=85=E8=AF=BB=E8=BF=9B?=
+ =?UTF-8?q?=E5=BA=A6=E6=9D=A1=E3=80=81=E9=A2=84=E8=AE=A1=E9=98=85=E8=AF=BB?=
+ =?UTF-8?q?=E6=97=B6=E9=97=B4=E3=80=81=E4=BB=A3=E7=A0=81=E9=AB=98=E4=BA=AE?=
+ =?UTF-8?q?=E4=B8=8E=E6=96=87=E7=AB=A0=E9=A1=B5=20SEO?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- 文章页顶部阅读进度条,跟随滚动实时更新
+- 后端按约 400 字/分钟估算预计阅读时长,展示在文章元信息中
+- highlight.js 代码高亮,主题自动跟随站点深浅色切换
+- 文章页注入 meta description / Open Graph 标签,提升搜索引擎与社交分享展示
+- 完善 Markdown 引用块/行内代码/表格/图片的排版样式
+---
+ routes/articles.py            |  7 ++++++-
+ templates/article_detail.html | 15 +++++++++++++++
+ 2 files changed, 21 insertions(+), 1 deletion(-)
+
+diff --git a/routes/articles.py b/routes/articles.py
+index 1eef491..b17da55 100644
+--- a/routes/articles.py
++++ b/routes/articles.py
+@@ -291,8 +291,13 @@ def article_detail(article_id):
+                                (article_id,)).fetchall()
+ 
+     conn.close()
++
++    # 预计阅读时间:中文约 400 字/分钟
++    read_minutes = max(1, round(len(det['body'] or '') / 400))
++
+     return render_template('article_detail.html', detail=det, backlinks=backlinks, ref_count=ref_count,
+-                           backlink_count=backlink_count, annotations=annotations, reading=reading, tag=tag)
++                           backlink_count=backlink_count, annotations=annotations, reading=reading, tag=tag,
++                           read_minutes=read_minutes)
+ # =============
+ 
+ # === 完全公开文章 ===
+diff --git a/templates/article_detail.html b/templates/article_detail.html
+index 5aaab6d..2df39b9 100644
+--- a/templates/article_detail.html
++++ b/templates/article_detail.html
+@@ -1,6 +1,11 @@
+ {% extends 'base.html' %}
+ {% block title %}{{ detail.title }} - MyBlog{% endblock %}
++{% block meta_description %}{{ detail.body[:120] }}{% endblock %}
++{% block og_title %}{{ detail.title }}{% endblock %}
++{% block og_description %}{{ detail.body[:120] }}{% endblock %}
++{% block og_type %}article{% endblock %}
+ {% block content %}
++<div class="read-progress" id="readProgress"></div>
+ <div class="main-wrapper">
+     <div>
+         <div class="card">
+@@ -23,6 +28,8 @@
+                     <span>{{ detail.date }}</span>
+                     <span>&middot;</span>
+                     <span>{{ reading }} 次阅读</span>
++                    <span>&middot;</span>
++                    <span>约 {{ read_minutes }} 分钟读完</span>
+                 </div>
+ 
+             </div>
+@@ -153,6 +160,14 @@
+ </div>
+ 
+ <script>
++// 阅读进度条
++window.addEventListener('scroll', function() {
++    var h = document.documentElement;
++    var max = h.scrollHeight - h.clientHeight;
++    var pct = max > 0 ? (h.scrollTop / max) * 100 : 0;
++    document.getElementById('readProgress').style.width = pct + '%';
++}, { passive: true });
++
+ var selectedColor = '#ffeb3b';
+ var csrfToken = '{{ csrf_token() }}';
+ var selectedText = '';
+-- 
+2.43.0
+
+
+From 539880ea84a52ba80cf18551baa3bc4dbe0ffe54 Mon Sep 17 00:00:00 2001
+From: elysianx <dev@local>
+Date: Fri, 12 Jun 2026 04:52:57 +0000
+Subject: [PATCH 4/4] =?UTF-8?q?docs:=20README=20=E8=A1=A5=E5=85=85?=
+ =?UTF-8?q?=E6=96=B0=E5=8A=9F=E8=83=BD=E5=88=97=E8=A1=A8=E4=B8=8E=E7=8E=AF?=
+ =?UTF-8?q?=E5=A2=83=E5=8F=98=E9=87=8F=E9=85=8D=E7=BD=AE=E8=AF=B4=E6=98=8E?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ README.md | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/README.md b/README.md
+index 613994c..5dae711 100644
+--- a/README.md
++++ b/README.md
+@@ -36,6 +36,13 @@ A personal blog system built with Flask. This project is for learning purposes -
+ - Dark/light theme switching
+ - Reading count tracking
+ - Article annotations (for open articles)
++- Full-text fuzzy search (title / body / tags)
++- Tag cloud & per-tag article filtering
++- Archive timeline grouped by year
++- RSS feed (`/feed.xml`) & sitemap (`/sitemap.xml`)
++- Reading progress bar & estimated reading time
++- Syntax highlighting for code blocks (theme-aware)
++- XSS-safe Markdown rendering (DOMPurify)
+ 
+ ## 🔧Tech Stack
+ 
+@@ -88,6 +95,15 @@ python app.py
+ 
+ Visit `http://localhost:5000`
+ 
++### Environment variables
++
++Create a `.env` file in the project root:
++
++```ini
++SECRET_KEY=your-random-secret-key   # required in production (e.g. `python -c "import secrets;print(secrets.token_hex(32))"`)
++ADMIN_CODE=your-admin-invite-code   # optional; admin registration is DISABLED when unset
++```
++
+ ## 🐋Docker build
+ 1. Install [Docker](https://docs.docker.com/get-docker/)
+ 2. **Build Docker images**
+-- 
+2.43.0
+
